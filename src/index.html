@@ -8,6 +8,9 @@
         <link rel="stylesheet" href="./hljsl.min.css">
         <link rel="stylesheet" href="./demo.min.css">
         <script>
+            /**
+             * Make sure this is the production site and the user is not viewing the template file. 
+             */
             const isLocalhost = Boolean(
                 window.location.hostname === 'localhost' ||
                 // Check for IPv6 localhost addresses.
@@ -21,9 +24,12 @@
             );
             if (isLocalhost && !window.location.href.includes("dist")) {
                 setTimeout(() => {
-                    document.write(`<p>You attempted to view the template file that is used as Highlight JS Lites (HLJSL) demo page. Please build HLJSL first then view the index.html file in the <a href="./dist/index.html">dist directory</a>.</p>`);
+                    document.write(`<p>You attempted to view the template file that is used as Highlight JS Lites (HLJSL) demo page. Please build HLJSL first then view the index.html file in the <a href="../dist/index.html">dist directory</a>.</p>`);
                 }, 1);
             }
+            /**
+             * Setup the color mode of the site / demo of light and dark themes for HLJSL.
+             */
             (function() {
                 
                 function init() {
@@ -58,12 +64,14 @@
                 // Retrieve the saved theme from local storage or use the user preference.
                 const savedColorMode = localStorage.getItem('dark-mode');
 
+                // Apply dark mode if the user enabled it explicitly or their browser preferences indicate they want it.
                 if (savedColorMode === 'true') {
                     setTheme('dark');
                 } else if (userPrefersDark && !savedColorMode) {
                     setTheme('dark');
                 }
 
+                // As soon as the document is interactive apply setup the color mode demo.
                 if (document.readyState === 'interactive' || document.readyState === 'complete') {
                     init();
                 } else {
@@ -88,7 +96,7 @@
                     </label>                  
                 </div>
                 <div id="github">
-                    <a href="#" target="_blank">
+                    <a href="https://github.com/caboodle-tech/highlight-js-lite" target="_blank">
                         View GitHub Repository &nbsp;
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                             <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -132,7 +140,7 @@
                 </li>
             </ol>
             <p>
-                The precompiled version of HLJSL uses the light and dark StackOverflow theme. If you would like to compile HLJSL with a different theme the process is fairly simple. Please visit the <a href="#" target="_blank">compile with a different theme</a> section of the GitHub repository for more information.
+                The precompiled version of HLJSL uses the light and dark StackOverflow theme. If you would like to compile HLJSL with a different theme the process is fairly simple. Please visit the <a href="https://github.com/caboodle-tech/highlight-js-lite#compile-with-a-different-theme" target="_blank">compile with a different theme</a> section of the GitHub repository for more information.
             </p>
             <div class="header">Examples</div>
             <p>
@@ -145,20 +153,20 @@
             <pre>
                 <code class="1c">
                     #Если Клиент Тогда
-                    Перем СимвольныйКодКаталога = &quot;ля-ля-ля&quot;; //комментарий
+                    Перем СимвольныйКодКаталога = "ля-ля-ля"; //комментарий
                     Функция Сообщить(Знач ТекстСообщения, ТекстСообщения2) Экспорт //комментарий к функции
-                    x=ТекстСообщения+ТекстСообщения2+&quot;
-                    |строка1
-                    |строка2
-                    |строка3&quot;;
+                        x=ТекстСообщения+ТекстСообщения2+"
+                        |строка1
+                        |строка2
+                        |строка3";
                     КонецФункции
                     #КонецЕсли
-
+                    
                     // Процедура ПриНачалеРаботыСистемы
                     //
                     Процедура ПриНачалеРаботыСистемы()
-                    Обработки.Помощник.ПолучитьФорму(&quot;Форма&quot;).Открыть();
-                    d = &#39;21.01.2008&#39;
+                        Обработки.Помощник.ПолучитьФорму("Форма").Открыть();
+                        d = '21.01.2008'
                     КонецПроцедуры
                 </code>
             </pre>
@@ -171,24 +179,24 @@
                         /*define package inline interface*/
                         public interface IFooBarzable {
                             public function foo(... pairs):Array;
-                    }
-
-                    public class FooBar implements IFooBarzable {
-                        static private var cnt:uint = 0;
-                        private var bar:String;
-
-                        //constructor
-                        public function TestBar(bar:String):void {
-                            bar = bar;
-                            ++cnt;
                         }
 
-                        public function foo(... pairs):Array {
-                            pairs.push(bar);
-                            return pairs;
+                        public class FooBar implements IFooBarzable {
+                            static private var cnt:uint = 0;
+                            private var bar:String;
+
+                            //constructor
+                            public function TestBar(bar:String):void {
+                                bar = bar;
+                                ++cnt;
+                            }
+
+                            public function foo(... pairs):Array {
+                                pairs.push(bar);
+                                return pairs;
+                            }
                         }
                     }
-                }
                 </code>
             </pre>
             <div class="lang-title">Apache</div>
@@ -207,11 +215,11 @@
                     Allow from All
 
                     &lt;Location /maps/&gt;
-                    RewriteMap map txt:map.txt
-                    RewriteMap lower int:tolower
-                    RewriteCond %{REQUEST_URI} ^/([^/.]+)\.html$ [NC]
-                    RewriteCond ${map:${lower:%1}|NOT_FOUND} !NOT_FOUND
-                    RewriteRule .? /index.php?q=${map:${lower:%1}} [NC,L]
+                        RewriteMap map txt:map.txt
+                        RewriteMap lower int:tolower
+                        RewriteCond %{REQUEST_URI} ^/([^/.]+)\.html$ [NC]
+                        RewriteCond ${map:${lower:%1}|NOT_FOUND} !NOT_FOUND
+                        RewriteRule .? /index.php?q=${map:${lower:%1}} [NC,L]
                     &lt;/Location&gt;
                 </code>
             </pre>
@@ -352,24 +360,24 @@
                     import org.aspectj.lang.annotation.AdviceName;
 
                     privileged public aspect LoggingAspect percflowbelow(ajia.services.*){
-                    private pointcut getResult() : call(* *(..) throws SQLException) &amp;&amp; args(Account, .., int);
-                    @AdviceName(&quot;CheckValidEmail&quot;)
-                    before (Customer hu) : getResult(hu){
-                        System.out.println(&quot;Your mail address is valid!&quot;);
-                    }
-                    Object around() throws InsufficientBalanceException: getResult() &amp;&amp; call(Customer.new(String,String,int,int,int)){
-                        return	proceed();
-                    }
-                    public Cache getCache() {
-                        return this.cache;
-                    }
-                    pointcut beanPropertyChange(BeanSupport bean, Object newValue): execution(void BeanSupport+.set*(*)) &amp;&amp; args(newValue) &amp;&amp; this(bean);
-                    declare parents: banking.entities.* implements BeanSupport;
-                    declare warning : call(void TestSoftening.perform()): &quot;Please ensure you are not calling this from an AWT thread&quot;;
-                    private String Identifiable.id;
-                    public void Identifiable.setId(String id) {
-                        this.id = id;
-                    }
+                        private pointcut getResult() : call(* *(..) throws SQLException) &amp;&amp; args(Account, .., int);
+                        @AdviceName(&quot;CheckValidEmail&quot;)
+                        before (Customer hu) : getResult(hu){
+                            System.out.println(&quot;Your mail address is valid!&quot;);
+                        }
+                        Object around() throws InsufficientBalanceException: getResult() &amp;&amp; call(Customer.new(String,String,int,int,int)){
+                            return	proceed();
+                        }
+                        public Cache getCache() {
+                            return this.cache;
+                        }
+                        pointcut beanPropertyChange(BeanSupport bean, Object newValue): execution(void BeanSupport+.set*(*)) &amp;&amp; args(newValue) &amp;&amp; this(bean);
+                        declare parents: banking.entities.* implements BeanSupport;
+                        declare warning : call(void TestSoftening.perform()): &quot;Please ensure you are not calling this from an AWT thread&quot;;
+                        private String Identifiable.id;
+                        public void Identifiable.setId(String id) {
+                            this.id = id;
+                        }
                     }
                 </code>
             </pre>
@@ -379,9 +387,9 @@
                     ; hotkeys and hotstrings
                     #a::WinSet, AlwaysOnTop, Toggle, A
                     #Space::
-                    MsgBox, Percent sign (&#96;%) need to be escaped.
-                    Run &quot;C:\Program Files\some\program.exe&quot;
-                    Gosub, label1
+                        MsgBox, Percent sign (&#96;%) need to be escaped.
+                        Run &quot;C:\Program Files\some\program.exe&quot;
+                        Gosub, label1
                     return
                     ::btw::by the way
                     ; volume
@@ -430,36 +438,36 @@
                 <pre>
                 <code class="axapta">
                     class ExchRateLoadBatch extends RunBaseBatch {
-                    ExchRateLoad rbc;
-                    container currencies;
-                    boolean actual;
-                    boolean overwrite;
-                    date beg;
-                    date end;
+                        ExchRateLoad rbc;
+                        container currencies;
+                        boolean actual;
+                        boolean overwrite;
+                        date beg;
+                        date end;
 
-                    #define.CurrentVersion(5)
+                        #define.CurrentVersion(5)
 
-                    #localmacro.CurrentList
-                        currencies,
-                        actual,
-                        beg,
-                        end
-                    #endmacro
-                    }
+                        #localmacro.CurrentList
+                            currencies,
+                            actual,
+                            beg,
+                            end
+                        #endmacro
+                        }
 
-                    public boolean unpack(container packedClass) {
-                    container       base;
-                    boolean         ret;
-                    Integer         version    = runbase::getVersion(packedClass);
+                        public boolean unpack(container packedClass) {
+                        container       base;
+                        boolean         ret;
+                        Integer         version    = runbase::getVersion(packedClass);
 
-                    switch (version) {
-                        case #CurrentVersion:
-                        [version, #CurrentList] = packedClass;
-                        return true;
-                        default:
-                        return false;
-                    }
-                    return ret;
+                        switch (version) {
+                            case #CurrentVersion:
+                            [version, #CurrentList] = packedClass;
+                            return true;
+                            default:
+                            return false;
+                        }
+                        return ret;
                     }
                 </code>
             </pre>
@@ -475,9 +483,9 @@
 
                     if [ &quot;$UID&quot; -ne 0 ]
                     then
-                    echo &quot;Superuser rights is required&quot;
-                    echo &#39;Printing the # sign&#39;
-                    exit 2
+                        echo &quot;Superuser rights is required&quot;
+                        echo &#39;Printing the # sign&#39;
+                        exit 2
                     fi
 
                     if test $# -eq 0
@@ -487,14 +495,14 @@
                     fi
 
                     genApacheConf(){
-                    if [[ &quot;$2&quot; = &quot;www&quot; ]]
-                    then
-                    full_domain=$1
-                    else
-                    full_domain=$2.$1
-                    fi
-                    host_root=&quot;${APACHE_HOME_DIR}$1/$2/$(title)&quot;
-                    echo -e &quot;# Host $1/$2 :&quot;
+                        if [[ &quot;$2&quot; = &quot;www&quot; ]]
+                        then
+                            full_domain=$1
+                        else
+                            full_domain=$2.$1
+                        fi
+                        host_root=&quot;${APACHE_HOME_DIR}$1/$2/$(title)&quot;
+                        echo -e &quot;# Host $1/$2 :&quot;
                     }
                 </code>
             </pre>
@@ -503,14 +511,14 @@
                 <code class="brainfuck">
                     ++++++++++
                     [ 3*10 and 10*10
-                    -&gt;+++&gt;++++++++++&lt;&lt;
+                        -&gt;+++&gt;++++++++++&lt;&lt;
                     ]&gt;&gt;
                     [ filling cells
-                    -&gt;++&gt;&gt;++&gt;++&gt;+&gt;++&gt;&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++[&lt;/]&lt;[&lt;]&lt;[&lt;]&gt;&gt;
+                        -&gt;++&gt;&gt;++&gt;++&gt;+&gt;++&gt;&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++&gt;++[&lt;/]&lt;[&lt;]&lt;[&lt;]&gt;&gt;
                     ]&lt;
                     +++++++++&lt;&lt;
                     [ rough codes correction loop
-                    -&gt;&gt;&gt;+&gt;+&gt;+&gt;+++&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+[&lt;]&lt;
+                        -&gt;&gt;&gt;+&gt;+&gt;+&gt;+++&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+&gt;+[&lt;]&lt;
                     ]
                     more accurate сodes correction
                     &gt;&gt;&gt;++&gt;
@@ -526,57 +534,57 @@
                     @0xdbb9ad1f14bf0b36;  # unique file ID, generated by &#96;capnp id&#96;
 
                     struct Person {
-                    name @0 :Text;
-                    birthdate @3 :Date;
+                        name @0 :Text;
+                        birthdate @3 :Date;
 
-                    email @1 :Text;
-                    phones @2 :List(PhoneNumber);
+                        email @1 :Text;
+                        phones @2 :List(PhoneNumber);
 
-                    struct PhoneNumber {
-                        number @0 :Text;
-                        type @1 :Type;
+                        struct PhoneNumber {
+                            number @0 :Text;
+                            type @1 :Type;
 
-                        enum Type {
-                        mobile @0;
-                        home @1;
-                        work @2;
+                            enum Type {
+                            mobile @0;
+                            home @1;
+                            work @2;
+                            }
                         }
-                    }
                     }
 
                     struct Date {
-                    year @0 :Int16;
-                    month @1 :UInt8;
-                    day @2 :UInt8;
-                    flags @3 :List(Bool) = [ true, false, false, true ];
+                        year @0 :Int16;
+                        month @1 :UInt8;
+                        day @2 :UInt8;
+                        flags @3 :List(Bool) = [ true, false, false, true ];
                     }
 
                     interface Node {
-                    isDirectory @0 () -&gt; (result :Bool);
+                        isDirectory @0 () -&gt; (result :Bool);
                     }
 
                     interface Directory extends(Node) {
-                    list @0 () -&gt; (list: List(Entry));
-                    struct Entry {
-                        name @0 :Text;
-                        node @1 :Node;
-                    }
+                        list @0 () -&gt; (list: List(Entry));
+                        struct Entry {
+                            name @0 :Text;
+                            node @1 :Node;
+                        }
 
-                    create @1 (name :Text) -&gt; (file :File);
-                    mkdir @2 (name :Text) -&gt; (directory :Directory)
-                    open @3 (name :Text) -&gt; (node :Node);
-                    delete @4 (name :Text);
-                    link @5 (name :Text, node :Node);
+                        create @1 (name :Text) -&gt; (file :File);
+                        mkdir @2 (name :Text) -&gt; (directory :Directory)
+                        open @3 (name :Text) -&gt; (node :Node);
+                        delete @4 (name :Text);
+                        link @5 (name :Text, node :Node);
                     }
 
                     interface File extends(Node) {
-                    size @0 () -&gt; (size: UInt64);
-                    read @1 (startAt :UInt64 = 0, amount :UInt64 = 0xffffffffffffffff)
-                        -&gt; (data: Data);
-                    # Default params = read entire file.
+                        size @0 () -&gt; (size: UInt64);
+                        read @1 (startAt :UInt64 = 0, amount :UInt64 = 0xffffffffffffffff)
+                            -&gt; (data: Data);
+                        # Default params = read entire file.
 
-                    write @2 (startAt :UInt64, data :Data);
-                    truncate @3 (size :UInt64);
+                        write @2 (startAt :UInt64, data :Data);
+                        truncate @3 (size :UInt64);
                     }
                 </code>
             </pre>
@@ -584,7 +592,7 @@
             <pre>
                 <code class="clojure-repl">
                     user=&gt; (defn f [x y]
-                    #_=&gt;   (+ x y))
+                        #_=&gt;   (+ x y))
                     #&#39;user/f
                     user=&gt; (f 5 7)
                     12
@@ -598,21 +606,21 @@
                     ; Comment
 
                     (def
-                    ^{:macro true
-                        :added &quot;1.0&quot;}
-                    let (fn* let [&amp;form &amp;env &amp; decl] (cons &#39;let* decl)))
+                        ^{:macro true
+                            :added &quot;1.0&quot;}
+                        let (fn* let [&amp;form &amp;env &amp; decl] (cons &#39;let* decl)))
 
                     (def ^:dynamic chunk-size 17)
 
                     (defn next-chunk [rdr]
-                    (let [buf (char-array chunk-size)
+                        (let [buf (char-array chunk-size)
                             s (.read rdr buf)]
-                    (when (pos? s)
-                        (java.nio.CharBuffer/wrap buf 0 s))))
+                        (when (pos? s)
+                            (java.nio.CharBuffer/wrap buf 0 s))))
 
                     (defn chunk-seq [rdr]
-                    (when-let [chunk (next-chunk rdr)]
-                        (cons chunk (lazy-seq (chunk-seq rdr)))))
+                        (when-let [chunk (next-chunk rdr)]
+                            (cons chunk (lazy-seq (chunk-seq rdr)))))
                 </code>
             </pre>
             <div class="lang-title">CMake</div>
@@ -655,21 +663,21 @@
                     two = -&gt; 2
 
                     math =
-                    root:   Math.sqrt
-                    square: square
-                    cube:   (x) -&gt; x * square x
+                        root:   Math.sqrt
+                        square: square
+                        cube:   (x) -&gt; x * square x
 
                     race = (winner, runners...) -&gt;
-                    print winner, runners
+                        print winner, runners
 
                     class Animal extends Being
-                    constructor: (@name) -&gt;
+                        constructor: (@name) -&gt;
 
-                    move: (meters) -&gt;
-                        alert @name + &quot; moved #{meters}m.&quot;
+                        move: (meters) -&gt;
+                            alert @name + &quot; moved #{meters}m.&quot;
 
                     hi = &#96;function() {
-                    return [document.title, &quot;Hello JavaScript&quot;].join(&quot;: &quot;);
+                        return [document.title, &quot;Hello JavaScript&quot;].join(&quot;: &quot;);
                     }&#96;
 
                     heredoc = &quot;&quot;&quot;
@@ -694,15 +702,15 @@
 
                     int main(int argc, char *argv[]) {
 
-                    /* An annoying &quot;Hello World&quot; example */
-                    for (auto i = 0; i &lt; 0xFFFF; i++)
-                        cout &lt;&lt; &quot;Hello, World!&quot; &lt;&lt; endl;
+                        /* An annoying &quot;Hello World&quot; example */
+                        for (auto i = 0; i &lt; 0xFFFF; i++)
+                            cout &lt;&lt; &quot;Hello, World!&quot; &lt;&lt; endl;
 
-                    char c = &#39;\n&#39;;
-                    unordered_map &lt;string, vector&lt;string&gt; &gt; m;
-                    m[&quot;key&quot;] = &quot;\\\\&quot;; // this is an error
+                        char c = &#39;\n&#39;;
+                        unordered_map &lt;string, vector&lt;string&gt; &gt; m;
+                        m[&quot;key&quot;] = &quot;\\\\&quot;; // this is an error
 
-                    return -2e3 + 12l;
+                        return -2e3 + 12l;
                     }
                 </code>
             </pre>
@@ -741,11 +749,11 @@
 
                     internal static void ExceptionFilters()
                     {
-                    try
-                    {
-                        throw new Exception();
-                    }
-                    catch (Exception e) when (e.Message == &quot;My error&quot;) { }
+                        try
+                        {
+                            throw new Exception();
+                        }
+                        catch (Exception e) when (e.Message == &quot;My error&quot;) { }
                     }
                 </code>
             </pre>
@@ -753,29 +761,29 @@
             <pre>
                 <code class="css">
                     @media screen and (-webkit-min-device-pixel-ratio: 0) {
-                    body:first-of-type pre::after {
-                        content: &#39;highlight: &#39; attr(class);
-                    }
-                    body {
-                        background: linear-gradient(45deg, blue, red);
-                    }
+                        body:first-of-type pre::after {
+                            content: &#39;highlight: &#39; attr(class);
+                        }
+                        body {
+                            background: linear-gradient(45deg, blue, red);
+                        }
                     }
 
                     @import url(&#39;print.css&#39;);
                     @page:right {
-                    margin: 1cm 2cm 1.3cm 4cm;
+                        margin: 1cm 2cm 1.3cm 4cm;
                     }
 
                     @font-face {
-                    font-family: Chunkfive; src: url(&#39;Chunkfive.otf&#39;);
+                        font-family: Chunkfive; src: url(&#39;Chunkfive.otf&#39;);
                     }
 
                     div.text,
                     #content,
                     li[lang=ru] {
-                    font: Tahoma, Chunkfive, sans-serif;
-                    background: url(&#39;hatch.png&#39;) /* wtf? */;  color: #F0F0F0 !important;
-                    width: 100%;
+                        font: Tahoma, Chunkfive, sans-serif;
+                        background: url(&#39;hatch.png&#39;) /* wtf? */;  color: #F0F0F0 !important;
+                        width: 100%;
                     }
                 </code>
             </pre>
@@ -787,7 +795,7 @@
                     import std.stdio;
 
                     /+
-                    this is a /+ nesting +/ comment
+                        this is a /+ nesting +/ comment
                     +/
 
                     enum COMPILED_ON = __TIMESTAMP__;  // special token
@@ -813,7 +821,7 @@
                     enum f = [3.14f, .1, 1., 1e100, 0xc0de.01p+100];
 
                     static if (something == true) {
-                    import std.algorithm;
+                        import std.algorithm;
                     }
 
                     void main() pure nothrow @safe {
@@ -870,33 +878,33 @@
                 <code class="delphi">
                     TList = Class(TObject)
                     Private
-                    Some: String;
+                        Some: String;
                     Public
-                    Procedure Inside; // Suxx
+                        Procedure Inside; // Suxx
                     End;{TList}
 
                     Procedure CopyFile(InFileName, var OutFileName: String);
                     Const
-                    BufSize = 4096; (* Huh? *)
+                        BufSize = 4096; (* Huh? *)
                     Var
-                    InFile, OutFile: TStream;
-                    Buffer: Array[1..BufSize] Of Byte;
-                    ReadBufSize: Integer;
+                        InFile, OutFile: TStream;
+                        Buffer: Array[1..BufSize] Of Byte;
+                        ReadBufSize: Integer;
                     Begin
-                    InFile := Nil;
-                    OutFile := Nil;
-                    Try
-                        InFile := TFileStream.Create(InFileName, fmOpenRead);
-                        OutFile := TFileStream.Create(OutFileName, fmCreate);
-                        Repeat
-                        ReadBufSize := InFile.Read(Buffer, BufSize);
-                        OutFile.Write(Buffer, ReadBufSize);
-                        Until ReadBufSize&lt;&gt;BufSize;
-                        Log(&#39;File &#39;&#39;&#39; + InFileName + &#39;&#39;&#39; copied&#39;#13#10);
-                    Finally
-                        InFile.Free;
-                        OutFile.Free;
-                    End;{Try}
+                        InFile := Nil;
+                        OutFile := Nil;
+                        Try
+                            InFile := TFileStream.Create(InFileName, fmOpenRead);
+                            OutFile := TFileStream.Create(OutFileName, fmCreate);
+                            Repeat
+                            ReadBufSize := InFile.Read(Buffer, BufSize);
+                            OutFile.Write(Buffer, ReadBufSize);
+                            Until ReadBufSize&lt;&gt;BufSize;
+                            Log(&#39;File &#39;&#39;&#39; + InFileName + &#39;&#39;&#39; copied&#39;#13#10);
+                        Finally
+                            InFile.Free;
+                            OutFile.Free;
+                        End;{Try}
                     End;{CopyFile}
                 </code>
             </pre>
@@ -910,7 +918,7 @@
                     @@ -1,8 +1,7 @@
                     hljs.LANGUAGES.ini =
                     {
-                    case_insensitive: true,
+                       case_insensitive: true,
                     -  defaultMode:
                     -  {
                     +  defaultMode: {
@@ -932,7 +940,7 @@
                     ! compress the size of the
                     ! changes.
 
-                    It is important to spell
+                        It is important to spell
                 </code>
             </pre>
             <div class="lang-title">Django</div>
@@ -943,8 +951,8 @@
 
                     {# Striped table #}
                     &lt;tr class=&quot;{% cycle odd,even %}&quot;&gt;
-                    &lt;td&gt;{{ article|default:&quot;Hi... &quot;|escape }}&lt;/td&gt;
-                    &lt;td {% if article.today %}class=&quot;today&quot;{% endif %}&gt;{{ article.date|date:&#39;d.m.Y&#39; }}&lt;/td&gt;
+                        &lt;td&gt;{{ article|default:&quot;Hi... &quot;|escape }}&lt;/td&gt;
+                        &lt;td {% if article.today %}class=&quot;today&quot;{% endif %}&gt;{{ article.date|date:&#39;d.m.Y&#39; }}&lt;/td&gt;
                     &lt;/tr&gt;
 
                     {% endfor %}
@@ -1039,9 +1047,9 @@
                     &lt;h3&gt;Hours&lt;/h3&gt;
 
                     &lt;ul&gt;
-                    {#users}
-                    &lt;li {hello}}&gt;{firstName}&lt;/li&gt;{~n}
-                    {/users}
+                        {#users}
+                        &lt;li {hello}}&gt;{firstName}&lt;/li&gt;{~n}
+                        {/users}
                     &lt;/ul&gt;
                 </code>
             </pre>
@@ -1049,9 +1057,9 @@
             <pre>
                 <code class="elixir">
                     defrecord Person, first_name: nil, last_name: &quot;Dudington&quot; do
-                    def name record do # huh ?
-                        &quot;#{record.first_name} #{record.last_name}&quot;
-                    end
+                        def name record do # huh ?
+                            &quot;#{record.first_name} #{record.last_name}&quot;
+                        end
                     end
 
                     defrecord User, name: &quot;José&quot;, age: 25
@@ -1060,35 +1068,35 @@
                     guy.name
 
                     defmodule ListServer do
-                    @moduledoc &quot;&quot;&quot;
-                    This module provides an easy to use ListServer, useful for keeping
-                    lists of things.
-                    &quot;&quot;&quot;
-                    use GenServer.Behaviour
-                    alias Foo.Bar
+                        @moduledoc &quot;&quot;&quot;
+                        This module provides an easy to use ListServer, useful for keeping
+                        lists of things.
+                        &quot;&quot;&quot;
+                        use GenServer.Behaviour
+                        alias Foo.Bar
 
-                    ### Public API
-                    @doc &quot;&quot;&quot;
-                    Starts and links a new ListServer, returning {:ok, pid}
+                        ### Public API
+                        @doc &quot;&quot;&quot;
+                        Starts and links a new ListServer, returning {:ok, pid}
 
-                    ## Example
+                        ## Example
 
-                        iex&gt; {:ok, pid} = ListServer.start_link
+                            iex&gt; {:ok, pid} = ListServer.start_link
 
-                    &quot;&quot;&quot;
-                    def start_link do
-                        :gen_server.start_link({:local, :list}, __MODULE__, [], [])
-                    end
+                        &quot;&quot;&quot;
+                        def start_link do
+                            :gen_server.start_link({:local, :list}, __MODULE__, [], [])
+                        end
 
-                    ### GenServer API
-                    def init(list) do
-                        {:ok, list}
-                    end
+                        ### GenServer API
+                        def init(list) do
+                            {:ok, list}
+                        end
 
-                    # Clear the list
-                    def handle_cast :clear, list do
-                        {:noreply, []}
-                    end
+                        # Clear the list
+                        def handle_cast :clear, list do
+                            {:noreply, []}
+                        end
                     end
 
                     {:ok, pid} = ListServer.start_link
@@ -1104,7 +1112,7 @@
                     &lt;%# this is a comment %&gt;
 
                     &lt;% @posts.each do |post| %&gt;
-                    &lt;p&gt;&lt;%= link_to post.title, post %&gt;&lt;/p&gt;
+                        &lt;p&gt;&lt;%= link_to post.title, post %&gt;&lt;/p&gt;
                     &lt;% end %&gt;
 
                     &lt;%- available_things = things.select(&amp;:available?) -%&gt;
@@ -1253,8 +1261,8 @@
 
                     // Single line comment...
                     (*
-                    This is a
-                    multiline comment.
+                        This is a
+                        multiline comment.
                     *)
                     let checkList alist =
                         match alist with
@@ -1282,11 +1290,11 @@
 
                     [&lt;AbstractClass&gt;]
                     type Animal =
-                    abstract Speak : unit -&gt; unit
+                        abstract Speak : unit -&gt; unit
 
                     type Widget =
-                    | RedWidget
-                    | GreenWidget
+                        | RedWidget
+                        | GreenWidget
 
                     type Point = {X: float; Y: float;}
 
@@ -1340,25 +1348,25 @@
                 <code class="gherkin">
                     # language: en
                     Feature: Addition
-                    In order to avoid silly mistakes
-                    As a math idiot
-                    I want to be told the sum of two numbers
+                        In order to avoid silly mistakes
+                        As a math idiot
+                        I want to be told the sum of two numbers
 
-                    @this_is_a_tag
-                    Scenario Outline: Add two numbers
-                        * I have a calculator
-                        Given I have entered &lt;input_1&gt; into the calculator
-                        And I have entered &lt;input_2&gt; into the calculator
-                        When I press &lt;button&gt;
-                        Then the result should be &lt;output&gt; on the screen
-                        And I have a string like
-                        &quot;&quot;&quot;
-                        Here is
-                        some
-                        multiline text
-                        &quot;&quot;&quot;
+                        @this_is_a_tag
+                        Scenario Outline: Add two numbers
+                            * I have a calculator
+                            Given I have entered &lt;input_1&gt; into the calculator
+                            And I have entered &lt;input_2&gt; into the calculator
+                            When I press &lt;button&gt;
+                            Then the result should be &lt;output&gt; on the screen
+                            And I have a string like
+                            &quot;&quot;&quot;
+                            Here is
+                            some
+                            multiline text
+                            &quot;&quot;&quot;
 
-                    Examples:
+                        Examples:
                         | input_1 | input_2 | button | output |
                         | 20      | 30      | add    | 50     |
                         | 2       | 5       | add    | 7      |
@@ -1387,11 +1395,11 @@
                     layout(triangle_strip, max_vertices = 3) out;
 
                     void main() {
-                    for(int i = 0; i &lt; gl_in.length(); i++) {
-                        gl_Position = gl_in[i].gl_Position;
-                        EmitVertex();
-                    }
-                    EndPrimitive();
+                        for(int i = 0; i &lt; gl_in.length(); i++) {
+                            gl_Position = gl_in[i].gl_Position;
+                            EmitVertex();
+                        }
+                        EndPrimitive();
                     }
 
 
@@ -1578,8 +1586,8 @@
                 <code class="haml">
                     !!! XML
                     %html
-                    %body
-                        %h1.jumbo{:id=&gt;&quot;a&quot;, :style=&gt;&#39;font-weight: normal&#39;, :title=&gt;title} highlight.js
+                        %body
+                            %h1.jumbo{:id=&gt;&quot;a&quot;, :style=&gt;&#39;font-weight: normal&#39;, :title=&gt;title} highlight.js
                         /html comment
                         -# ignore this line
                         %ul(style=&#39;margin: 0&#39;)
@@ -1598,9 +1606,9 @@
                     &lt;h3&gt;Hours&lt;/h3&gt;
 
                     &lt;ul&gt;
-                    {{#each content.users}}
-                    &lt;li {{bindAttr hello=&quot;world&quot;}}&gt;{{firstName}}&lt;/li&gt;
-                    {{/each}}
+                        {{#each content.users}}
+                        &lt;li {{bindAttr hello=&quot;world&quot;}}&gt;{{firstName}}&lt;/li&gt;
+                        {{/each}}
                     &lt;/ul&gt;
                 </code>
             </pre>
@@ -1626,22 +1634,22 @@
 
                     -- Type class for converting StringLike types to and from strict ByteStrings
                     class DataPacket a where
-                    toStrictBS :: a -&gt; Strict.ByteString
-                    fromStrictBS :: Strict.ByteString -&gt; a
+                        toStrictBS :: a -&gt; Strict.ByteString
+                        fromStrictBS :: Strict.ByteString -&gt; a
 
                     instance DataPacket Strict.ByteString where
-                    toStrictBS = id
-                    {-# INLINE toStrictBS #-}
-                    fromStrictBS = id
-                    {-# INLINE fromStrictBS #-}
+                        toStrictBS = id
+                        {-# INLINE toStrictBS #-}
+                        fromStrictBS = id
+                        {-# INLINE fromStrictBS #-}
 
                     openBoundUDPPort :: String -&gt; Int -&gt; IO Socket
                     openBoundUDPPort uri port = do
-                    s &lt;- getUDPSocket
-                    bindAddr &lt;- inet_addr uri
-                    let a = SockAddrInet (toEnum port) bindAddr
-                    bindSocket s a
-                    return s
+                        s &lt;- getUDPSocket
+                        bindAddr &lt;- inet_addr uri
+                        let a = SockAddrInet (toEnum port) bindAddr
+                        bindSocket s a
+                        return s
 
                     pingUDPPort :: Socket -&gt; SockAddr -&gt; IO ()
                     pingUDPPort s a = sendTo s (Strict.singleton 0) a &gt;&gt; return ()
@@ -1720,31 +1728,31 @@
                     import java.util.ArrayList;
 
                     public abstract class L2Character extends L2Object {
-                    public static final Short ABNORMAL_EFFECT_BLEEDING = 0x0_0_0_1; // not sure
+                        public static final Short ABNORMAL_EFFECT_BLEEDING = 0x0_0_0_1; // not sure
 
-                    public void moveTo(int x, int y, int z) {
-                        _ai = null;
-                        _log.warning(&quot;Should not be called&quot;);
-                        if (1 &gt; 5) {
-                        return;
+                        public void moveTo(int x, int y, int z) {
+                            _ai = null;
+                            _log.warning(&quot;Should not be called&quot;);
+                            if (1 &gt; 5) {
+                            return;
+                            }
                         }
-                    }
 
-                    /** Task of AI notification */
-                    @SuppressWarnings( { &quot;nls&quot;, &quot;unqualified-field-access&quot;, &quot;boxing&quot; })
-                    public class NotifyAITask implements Runnable {
-                        private final CtrlEvent _evt;
+                        /** Task of AI notification */
+                        @SuppressWarnings( { &quot;nls&quot;, &quot;unqualified-field-access&quot;, &quot;boxing&quot; })
+                        public class NotifyAITask implements Runnable {
+                            private final CtrlEvent _evt;
 
-                        List&lt;String&gt; mList = new ArrayList&lt;String&gt;()
+                            List&lt;String&gt; mList = new ArrayList&lt;String&gt;()
 
-                        public void run() {
-                        try {
-                            getAI().notifyEvent(_evt, _evt.class, null);
-                        } catch (Throwable t) {
-                            t.printStackTrace();
+                            public void run() {
+                                try {
+                                    getAI().notifyEvent(_evt, _evt.class, null);
+                                } catch (Throwable t) {
+                                    t.printStackTrace();
+                                }
+                            }
                         }
-                        }
-                    }
                     }
                 </code>
             </pre>
@@ -1755,36 +1763,36 @@
                     const ANSWER = 42;
 
                     class Car extends Vehicle {
-                    constructor(speed, cost) {
-                        super(speed);
+                        constructor(speed, cost) {
+                            super(speed);
 
-                        var c = Symbol(&#39;cost&#39;);
-                        this[c] = cost;
+                            var c = Symbol(&#39;cost&#39;);
+                            this[c] = cost;
 
-                        this.intro = &#96;This is a car runs at
-                        ${speed}.&#96;;
-                    }
+                            this.intro = &#96;This is a car runs at
+                            ${speed}.&#96;;
+                        }
                     }
 
                     for (let num of [1, 2, 3]) {
-                    console.log(num + 0b111110111);
+                        console.log(num + 0b111110111);
                     }
 
                     function $initHighlight(block, flags) {
-                    try {
-                        if (block.className.search(/\bno\-highlight\b/) != -1)
-                        return processBlock(block.function, true, 0x0F) + &#39; class=&quot;&quot;&#39;;
-                    } catch (e) {
-                        /* handle exception */
-                        var e4x =
-                            &lt;div&gt;Example
-                                &lt;p&gt;1234&lt;/p&gt;&lt;/div&gt;;
-                    }
-                    for (var i = 0 / 2; i &lt; classes.length; i++) { // &quot;0 / 2&quot; should not be parsed as regexp
-                        if (checkCondition(classes[i]) === undefined)
-                        return /\d+[\s/]/g;
-                    }
-                    console.log(Array.every(classes, Boolean));
+                        try {
+                            if (block.className.search(/\bno\-highlight\b/) != -1)
+                            return processBlock(block.function, true, 0x0F) + &#39; class=&quot;&quot;&#39;;
+                        } catch (e) {
+                            /* handle exception */
+                            var e4x =
+                                &lt;div&gt;Example
+                                    &lt;p&gt;1234&lt;/p&gt;&lt;/div&gt;;
+                        }
+                        for (var i = 0 / 2; i &lt; classes.length; i++) { // &quot;0 / 2&quot; should not be parsed as regexp
+                            if (checkCondition(classes[i]) === undefined)
+                                return /\d+[\s/]/g;
+                        }
+                        console.log(Array.every(classes, Boolean));
                     }
 
                     export  $initHighlight;
@@ -1804,16 +1812,16 @@
             <pre>
                 <code class="json">
                     [
-                    {
-                        &quot;title&quot;: &quot;apples&quot;,
-                        &quot;count&quot;: [12000, 20000],
-                        &quot;description&quot;: {&quot;text&quot;: &quot;...&quot;, &quot;sensitive&quot;: false}
-                    },
-                    {
-                        &quot;title&quot;: &quot;oranges&quot;,
-                        &quot;count&quot;: [17500, null],
-                        &quot;description&quot;: {&quot;text&quot;: &quot;...&quot;, &quot;sensitive&quot;: false}
-                    }
+                        {
+                            &quot;title&quot;: &quot;apples&quot;,
+                            &quot;count&quot;: [12000, 20000],
+                            &quot;description&quot;: {&quot;text&quot;: &quot;...&quot;, &quot;sensitive&quot;: false}
+                        },
+                        {
+                            &quot;title&quot;: &quot;oranges&quot;,
+                            &quot;count&quot;: [17500, null],
+                            &quot;description&quot;: {&quot;text&quot;: &quot;...&quot;, &quot;sensitive&quot;: false}
+                        }
                     ]
                 </code>
             </pre>
@@ -1981,25 +1989,25 @@
                     #!/usr/bin/env csi
 
                     (defun prompt-for-cd ()
-                    &quot;Prompts
+                        &quot;Prompts
                         for CD&quot;
-                    (prompt-read &quot;Title&quot; 1.53 1 2/4 1.7 1.7e0 2.9E-4 +42 -7 #b001 #b001/100 #o777 #O777 #xabc55 #c(0 -5.6))
-                    (prompt-read &quot;Artist&quot; &amp;rest)
-                    (or (parse-integer (prompt-read &quot;Rating&quot;) :junk-allowed t) 0)
-                    (if x (format t &quot;yes&quot;) (format t &quot;no&quot; nil) ;and here comment
-                    )
-                    ;; second line comment
-                    &#39;(+ 1 2)
-                    (defvar *lines*)                ; list of all lines
-                    (position-if-not #&#39;sys::whitespacep line :start beg))
-                    (quote (privet 1 2 3))
-                    &#39;(hello world)
-                    (* 5 7)
-                    (1 2 34 5)
-                    (:use &quot;aaaa&quot;)
-                    (let ((x 10) (y 20))
-                        (print (+ x y))
-                    )
+                        (prompt-read &quot;Title&quot; 1.53 1 2/4 1.7 1.7e0 2.9E-4 +42 -7 #b001 #b001/100 #o777 #O777 #xabc55 #c(0 -5.6))
+                        (prompt-read &quot;Artist&quot; &amp;rest)
+                        (or (parse-integer (prompt-read &quot;Rating&quot;) :junk-allowed t) 0)
+                        (if x (format t &quot;yes&quot;) (format t &quot;no&quot; nil) ;and here comment
+                        )
+                        ;; second line comment
+                        &#39;(+ 1 2)
+                        (defvar *lines*)                ; list of all lines
+                        (position-if-not #&#39;sys::whitespacep line :start beg))
+                        (quote (privet 1 2 3))
+                        &#39;(hello world)
+                        (* 5 7)
+                        (1 2 34 5)
+                        (:use &quot;aaaa&quot;)
+                        (let ((x 10) (y 20))
+                            (print (+ x y))
+                        )
                 </code>
             </pre>
             <div class="lang-title">LiveCode</div>
@@ -2013,22 +2021,22 @@
 
 
                     command blog
-                    -- simple comment
-                    put &quot;Hello World!&quot; into sTest
-                    # ANOTHER COMMENT
-                    put &quot;form,url,asset&quot; into tHelpers
-                    rigLoadHelper tHelpers
+                        -- simple comment
+                        put &quot;Hello World!&quot; into sTest
+                        # ANOTHER COMMENT
+                        put &quot;form,url,asset&quot; into tHelpers
+                        rigLoadHelper tHelpers
                     end blog
 
                     /*Hello
                     block comment!*/
 
                     function myFunction
-                    if the secs &gt; 2000000000 then
-                        put &quot;Welcome to the future!&quot;
-                    else
-                        return &quot;something&quot;
-                    end if
+                        if the secs &gt; 2000000000 then
+                            put &quot;Welcome to the future!&quot;
+                        else
+                            return &quot;something&quot;
+                        end if
                     end myFunction
 
 
@@ -2041,10 +2049,10 @@
             <pre>
                 <code class="livescript">
                     # take the first n objects from a list
-                    take = (n, [x, ...xs]:list) --&gt;
-                    | n &lt;= 0     =&gt; []
-                    | empty list =&gt; []
-                    | otherwise  =&gt; [x] ++ take n - 1, xs
+                        take = (n, [x, ...xs]:list) --&gt;
+                        | n &lt;= 0     =&gt; []
+                        | empty list =&gt; []
+                        | otherwise  =&gt; [x] ++ take n - 1, xs
 
                     take 2, [1, 2, 3, 4, 5]
 
@@ -2058,26 +2066,26 @@
 
                     # List comprehensions and piping
                     t1 =
-                    * id: 1
-                        name: &#39;george&#39;
-                    * id: 2
-                        name: &#39;mike&#39;
-                    * id: 3
-                        name: &#39;donald&#39;
+                        * id: 1
+                            name: &#39;george&#39;
+                        * id: 2
+                            name: &#39;mike&#39;
+                        * id: 3
+                            name: &#39;donald&#39;
 
                     t2 =
-                    * id: 2
-                        age: 21
-                    * id: 1
-                        age: 20
-                    * id: 3
-                        age: 26
+                        * id: 2
+                            age: 21
+                        * id: 1
+                            age: 20
+                        * id: 3
+                            age: 26
                     [{id:id1, name, age}
-                    for {id:id1, name} in t1
-                    for {id:id2, age} in t2
-                    where id1 is id2]
-                    |&gt; sort-by \id
-                    |&gt; JSON.stringify
+                        for {id:id1, name} in t1
+                        for {id:id2, age} in t2
+                        where id1 is id2]
+                        |&gt; sort-by \id
+                        |&gt; JSON.stringify
                 </code>
             </pre>
             <div class="lang-title">Lua</div>
@@ -2237,27 +2245,27 @@
                     proc string[] getSelectedLights()
 
                     {
-                    string $selectedLights[];
+                        string $selectedLights[];
 
-                    string $select[] = &#96;ls -sl -dag -leaf&#96;;
+                        string $select[] = &#96;ls -sl -dag -leaf&#96;;
 
-                    for ( $shape in $select )
-                    {
-                        // Determine if this is a light.
-                        //
-                        string $class[] = getClassification( &#96;nodeType $shape&#96; );
-
-
-                        if ( ( &#96;size $class&#96; ) &gt; 0 &amp;&amp; ( &quot;light&quot; == $class[0] ) )
+                        for ( $shape in $select )
                         {
-                        $selectedLights[ &#96;size $selectedLights&#96; ] = $shape;
+                            // Determine if this is a light.
+                            //
+                            string $class[] = getClassification( &#96;nodeType $shape&#96; );
+
+
+                            if ( ( &#96;size $class&#96; ) &gt; 0 &amp;&amp; ( &quot;light&quot; == $class[0] ) )
+                            {
+                            $selectedLights[ &#96;size $selectedLights&#96; ] = $shape;
+                            }
                         }
-                    }
 
-                    // Result is an array of all lights included in
+                        // Result is an array of all lights included in
 
-                    // current selection list.
-                    return $selectedLights;
+                        // current selection list.
+                        return $selectedLights;
                     }
                 </code>
             </pre>
@@ -2297,12 +2305,12 @@
 
                     environ
 
-                    vocabularies LAMBDA,
-                        NUMBERS,
-                        NAT_1, XBOOLE_0, SUBSET_1, FINSEQ_1, XXREAL_0, CARD_1,
-                        ARYTM_1, ARYTM_3, TARSKI, RELAT_1, ORDINAL4, FUNCOP_1;
+                        vocabularies LAMBDA,
+                            NUMBERS,
+                            NAT_1, XBOOLE_0, SUBSET_1, FINSEQ_1, XXREAL_0, CARD_1,
+                            ARYTM_1, ARYTM_3, TARSKI, RELAT_1, ORDINAL4, FUNCOP_1;
 
-                    :: etc...
+                        :: etc...
 
                     begin
 
@@ -2311,73 +2319,73 @@
                             x for set;
 
                     definition
-                    let D;
+                        let D;
 
-                    attr D is LambdaTerm-like means
-                        (dom D qua Tree) is finite &amp;
-                    ::&gt;                          *143,306
-                        for r st r in dom D holds
-                        r is FinSequence of {0,1} &amp;
-                        r^&lt;*0*&gt; in dom D implies D.r = 0;
+                        attr D is LambdaTerm-like means
+                            (dom D qua Tree) is finite &amp;
+                        ::&gt;                          *143,306
+                            for r st r in dom D holds
+                            r is FinSequence of {0,1} &amp;
+                            r^&lt;*0*&gt; in dom D implies D.r = 0;
                     end;
 
                     registration
-                    cluster LambdaTerm-like for DecoratedTree of NAT;
-                    existence;
-                    ::&gt;       *4
+                        cluster LambdaTerm-like for DecoratedTree of NAT;
+                        existence;
+                        ::&gt;       *4
                     end;
 
                     definition
-                    mode LambdaTerm is LambdaTerm-like DecoratedTree of NAT;
-                    end;
+                        mode LambdaTerm is LambdaTerm-like DecoratedTree of NAT;
+                        end;
 
-                    ::: Then we extend this ordinary one-step beta reduction, that is,
-                    :::  any subterm is also allowed to reduce.
-                    definition
-                    let M,N;
+                        ::: Then we extend this ordinary one-step beta reduction, that is,
+                        :::  any subterm is also allowed to reduce.
+                        definition
+                        let M,N;
 
-                    pred M beta N means
-                        ex p st
-                        M|p beta_shallow N|p &amp;
-                        for q st not p is_a_prefix_of q holds
-                            [r,x] in M iff [r,x] in N;
+                        pred M beta N means
+                            ex p st
+                            M|p beta_shallow N|p &amp;
+                            for q st not p is_a_prefix_of q holds
+                                [r,x] in M iff [r,x] in N;
                     end;
 
                     theorem Th4:
-                    ProperPrefixes (v^&lt;*x*&gt;) = ProperPrefixes v \/ {v}
+                        ProperPrefixes (v^&lt;*x*&gt;) = ProperPrefixes v \/ {v}
                     proof
-                    thus ProperPrefixes (v^&lt;*x*&gt;) c= ProperPrefixes v \/ {v}
-                    proof
-                        let y;
-                        assume y in ProperPrefixes (v^&lt;*x*&gt;);
-                        then consider v1 such that
+                        thus ProperPrefixes (v^&lt;*x*&gt;) c= ProperPrefixes v \/ {v}
+                        proof
+                            let y;
+                            assume y in ProperPrefixes (v^&lt;*x*&gt;);
+                            then consider v1 such that
                     A1: y = v1 and
                     A2: v1 is_a_proper_prefix_of v^&lt;*x*&gt; by TREES_1:def 2;
-                    v1 is_a_prefix_of v &amp; v1 &lt;&gt; v or v1 = v by A2,TREES_1:9;
+                        v1 is_a_prefix_of v &amp; v1 &lt;&gt; v or v1 = v by A2,TREES_1:9;
                     then
-                    v1 is_a_proper_prefix_of v or v1 in {v} by TARSKI:def 1,XBOOLE_0:def 8;
-                    then  y in ProperPrefixes v or y in {v} by A1,TREES_1:def 2;
-                        hence thesis by XBOOLE_0:def 3;
-                    end;
-                    let y;
-                    assume y in ProperPrefixes v \/ {v};
+                        v1 is_a_proper_prefix_of v or v1 in {v} by TARSKI:def 1,XBOOLE_0:def 8;
+                    then   y in ProperPrefixes v or y in {v} by A1,TREES_1:def 2;
+                            hence thesis by XBOOLE_0:def 3;
+                        end;
+                        let y;
+                        assume y in ProperPrefixes v \/ {v};
                     then A3: y in ProperPrefixes v or y in {v} by XBOOLE_0:def 3;
                     A4: now
                         assume y in ProperPrefixes v;
                         then consider v1 such that
                     A5: y = v1 and
                     A6: v1 is_a_proper_prefix_of v by TREES_1:def 2;
-                    v is_a_prefix_of v^&lt;*x*&gt; by TREES_1:1;
+                        v is_a_prefix_of v^&lt;*x*&gt; by TREES_1:1;
                     then  v1 is_a_proper_prefix_of v^&lt;*x*&gt; by A6,XBOOLE_1:58;
-                        hence thesis by A5,TREES_1:def 2;
-                    end;
-                    v^{} = v by FINSEQ_1:34;
-                    then
-                    v is_a_prefix_of v^&lt;*x*&gt; &amp; v &lt;&gt; v^&lt;*x*&gt; by FINSEQ_1:33,TREES_1:1;
+                            hence thesis by A5,TREES_1:def 2;
+                        end;
+                        v^{} = v by FINSEQ_1:34;
+                        then
+                        v is_a_prefix_of v^&lt;*x*&gt; &amp; v &lt;&gt; v^&lt;*x*&gt; by FINSEQ_1:33,TREES_1:1;
                     then  v is_a_proper_prefix_of v^&lt;*x*&gt; by XBOOLE_0:def 8;
                     then  y in ProperPrefixes v or y = v &amp; v in ProperPrefixes (v^&lt;*x*&gt;)
-                    by A3,TARSKI:def 1,TREES_1:def 2;
-                    hence thesis by A4;
+                        by A3,TARSKI:def 1,TREES_1:def 2;
+                        hence thesis by A4;
                     end;
                 </code>
             </pre>
@@ -2482,17 +2490,17 @@
                     from module4 import nil
 
                     type
-                    TFoo = object ## Doc comment
-                        a: int32
-                    PFoo = ref TFoo
+                        TFoo = object ## Doc comment
+                            a: int32
+                        PFoo = ref TFoo
 
-                    proc do_stuff314(param_1: TFoo, par2am: var PFoo): PFoo {.exportc: &quot;dostuff&quot; .} =
-                    # Regular comment
-                    discard &quot;&quot;&quot;
-                    dfag
-                    sdfg&quot;&quot;
-                    &quot;&quot;&quot;
-                    result = nil
+                        proc do_stuff314(param_1: TFoo, par2am: var PFoo): PFoo {.exportc: &quot;dostuff&quot; .} =
+                            # Regular comment
+                            discard &quot;&quot;&quot;
+                            dfag
+                        sdfg&quot;&quot;
+                        &quot;&quot;&quot;
+                        result = nil
 
                     method abc(a: TFoo) = discard 1u32 + 0xabcdefABCDEFi32 + 0o01234567i8 + 0b010
 
@@ -2511,22 +2519,22 @@
                     */
 
                     let
-                    a = 1; # just a comment
-                    b = null;
-                    c = toString 10;
+                        a = 1; # just a comment
+                        b = null;
+                        c = toString 10;
                     in stdenv.mkDerivation rec {
-                    name = &quot;foo-${version}&quot;;
-                    version = &quot;1.3&quot;;
+                        name = &quot;foo-${version}&quot;;
+                        version = &quot;1.3&quot;;
 
-                    configureFlags = [ &quot;--with-foo2&quot; ] ++ stdenv.lib.optional bar &quot;--with-foo=${ with stdenv.lib; foo }&quot;
+                        configureFlags = [ &quot;--with-foo2&quot; ] ++ stdenv.lib.optional bar &quot;--with-foo=${ with stdenv.lib; foo }&quot;
 
-                    postInstall = &#39;&#39;
-                        ${ if true then &quot;--${test}&quot; else false }
-                    &#39;&#39;;
+                        postInstall = &#39;&#39;
+                            ${ if true then &quot;--${test}&quot; else false }
+                        &#39;&#39;;
 
-                    meta = with stdenv.lib; {
-                        homepage = https://nixos.org;
-                    };
+                        meta = with stdenv.lib; {
+                            homepage = https://nixos.org;
+                        };
                     }
                 </code>
             </pre>
@@ -2534,8 +2542,8 @@
             <pre>
                 <code class="nsis">
                     /*
-                    NSIS Scheme
-                    for highlight.js
+                        NSIS Scheme
+                        for highlight.js
                     */
 
                     ; Includes
@@ -2547,9 +2555,9 @@
                     RequestExecutionLevel user
                     CRCCheck on
                     !ifdef x64
-                    InstallDir &quot;$PROGRAMFILES64\installer_name&quot;
+                        InstallDir &quot;$PROGRAMFILES64\installer_name&quot;
                     !else
-                    InstallDir &quot;$PROGRAMFILES\installer_name&quot;
+                        InstallDir &quot;$PROGRAMFILES\installer_name&quot;
                     !endif
 
                     ; Pages
@@ -2557,13 +2565,13 @@
 
                     ; Sections
                     Section &quot;section_name&quot; section_index
-                    # your code here
+                        # your code here
                     SectionEnd
 
                     ; Functions
                     Function .onInit
 
-                    MessageBox MB_OK &quot;Here comes a$\n$\rline-break!&quot;
+                        MessageBox MB_OK &quot;Here comes a$\n$\rline-break!&quot;
 
                     FunctionEnd
                 </code>
@@ -2594,23 +2602,23 @@
                     @synthesize test=_test;
 
                     + (id) test {
-                    return [self testWithGreeting:@&quot;Hello, world!\nFoo bar!&quot;];
+                        return [self testWithGreeting:@&quot;Hello, world!\nFoo bar!&quot;];
                     }
 
                     + (id) testWithGreeting:(NSString*)greeting {
-                    return [[[self alloc] initWithGreeting:greeting] autorelease];
+                        return [[[self alloc] initWithGreeting:greeting] autorelease];
                     }
 
                     - (id) initWithGreeting:(NSString*)greeting {
-                    if ( (self = [super init]) ) {
-                        _greeting = [greeting retain];
-                    }
-                    return self;
+                        if ( (self = [super init]) ) {
+                            _greeting = [greeting retain];
+                        }
+                        return self;
                     }
 
                     - (void) dealloc {
-                    [_greeting release];
-                    [super dealloc];
+                        [_greeting release];
+                        [super dealloc];
                     }
 
                     @end
@@ -2652,54 +2660,54 @@
                     interface
 
                     uses
-                    System.Text;
+                        System.Text;
 
                     type
-                    List&lt;T&gt; = public class
-                        where T is Object;
-                    private
-                        method AppendToString(aBuilder: StringBuilder);
-                    public
-                        constructor(aData: T);
-                        constructor(aData: T; aNext: List&lt;T&gt;);
-                        property Next: List&lt;T&gt;;
-                        property Data: T;
+                        List&lt;T&gt; = public class
+                            where T is Object;
+                        private
+                            method AppendToString(aBuilder: StringBuilder);
+                        public
+                            constructor(aData: T);
+                            constructor(aData: T; aNext: List&lt;T&gt;);
+                            property Next: List&lt;T&gt;;
+                            property Data: T;
 
-                        method ToString: string; override;
-                    end;
+                            method ToString: string; override;
+                        end;
 
                     implementation
 
                     constructor List&lt;T&gt;(aData: T);
                     begin
-                    Data := aData;
+                        Data := aData;
                     end;
 
                     constructor List&lt;T&gt;(aData: T; aNext: List&lt;T&gt;);
                     begin
-                    constructor(aData);
-                    Next := aNext;
+                        constructor(aData);
+                        Next := aNext;
                     end;
 
                     method List&lt;T&gt;.ToString: string;
                     begin
-                    with lBuilder := new StringBuilder do begin
-                        AppendToString(lBuilder);
-                        result := lBuilder.ToString();
-                    end;
+                        with lBuilder := new StringBuilder do begin
+                            AppendToString(lBuilder);
+                            result := lBuilder.ToString();
+                        end;
                     end;
 
                     method List&lt;T&gt;.AppendToString(aBuilder: StringBuilder);
                     begin
-                    if assigned(Data) then
-                        aBuilder.Append(Data.ToString)
-                    else
-                        aBuilder.Append(&#39;nil&#39;);
+                        if assigned(Data) then
+                            aBuilder.Append(Data.ToString)
+                        else
+                            aBuilder.Append(&#39;nil&#39;);
 
-                    if assigned(Next) then begin
-                        aBuilder.Append(&#39;, &#39;);
-                        Next.AppendToString(aBuilder);
-                    end;
+                        if assigned(Next) then begin
+                            aBuilder.Append(&#39;, &#39;);
+                            Next.AppendToString(aBuilder);
+                        end;
                     end;
 
                     end.
@@ -2719,61 +2727,61 @@
 
                     # Comment for code
                     @create[aParam1;aParam2][local1;local2]
-                    ^connect[mysql://host/database?ClientCharset=windows-1251]
-                    ^for[i](1;10){
-                        &lt;p class=&quot;paragraph&quot;&gt;^eval($i+10)&lt;/p&gt;
-                        ^connect[mysql://host/database]{
-                        $tab[^table::sql{select * from &#96;table&#96; where a=&#39;1&#39;}]
-                        $var_Name[some${value}]
-                        }
-                    }
-
-                    ^rem{
-                        Multiline comment with code: $var
-                        ^while(true){
+                        ^connect[mysql://host/database?ClientCharset=windows-1251]
                         ^for[i](1;10){
-                            ^sleep[]
+                            &lt;p class=&quot;paragraph&quot;&gt;^eval($i+10)&lt;/p&gt;
+                            ^connect[mysql://host/database]{
+                                $tab[^table::sql{select * from &#96;table&#96; where a=&#39;1&#39;}]
+                                $var_Name[some${value}]
+                            }
                         }
+
+                        ^rem{
+                            Multiline comment with code: $var
+                            ^while(true){
+                                ^for[i](1;10){
+                                    ^sleep[]
+                                }
+                            }
                         }
-                    }
-                    ^taint[^#0A]
+                        ^taint[^#0A]
 
                     @GET_base[]
                     ## Comment for code
-                    # Isn&#39;t comment
-                    $result[$.hash_item1[one] $.hash_item2[two]]
-                    </code>
-                    </pre>
-                            <div class="lang-title">Perl</div>
-                            <pre>
-                    <code class="perl"># loads object
+                        # Isn&#39;t comment
+                        $result[$.hash_item1[one] $.hash_item2[two]]
+                </code>
+            </pre>
+            <div class="lang-title">Perl</div>
+            <pre>
+                <code class="perl"># loads object
                     sub load
                     {
-                    my $flds = $c-&gt;db_load($id,@_) || do {
-                        Carp::carp &quot;Can&#96;t load (class: $c, id: $id): &#39;$!&#39;&quot;; return undef
-                    };
-                    my $o = $c-&gt;_perl_new();
-                    $id12 = $id / 24 / 3600;
-                    $o-&gt;{&#39;ID&#39;} = $id12 + 123;
-                    #$o-&gt;{&#39;SHCUT&#39;} = $flds-&gt;{&#39;SHCUT&#39;};
-                    my $p = $o-&gt;props;
-                    my $vt;
-                    $string =~ m/^sought_text$/;
-                    $items = split //, &#39;abc&#39;;
-                    $string //= &quot;bar&quot;;
-                    for my $key (keys %$p)
-                    {
-                        if(${$vt.&#39;::property&#39;}) {
-                        $o-&gt;{$key . &#39;_real&#39;} = $flds-&gt;{$key};
-                        tie $o-&gt;{$key}, &#39;CMSBuilder::Property&#39;, $o, $key;
+                        my $flds = $c-&gt;db_load($id,@_) || do {
+                            Carp::carp &quot;Can&#96;t load (class: $c, id: $id): &#39;$!&#39;&quot;; return undef
+                        };
+                        my $o = $c-&gt;_perl_new();
+                        $id12 = $id / 24 / 3600;
+                        $o-&gt;{&#39;ID&#39;} = $id12 + 123;
+                        #$o-&gt;{&#39;SHCUT&#39;} = $flds-&gt;{&#39;SHCUT&#39;};
+                        my $p = $o-&gt;props;
+                        my $vt;
+                        $string =~ m/^sought_text$/;
+                        $items = split //, &#39;abc&#39;;
+                        $string //= &quot;bar&quot;;
+                        for my $key (keys %$p)
+                        {
+                            if(${$vt.&#39;::property&#39;}) {
+                                $o-&gt;{$key . &#39;_real&#39;} = $flds-&gt;{$key};
+                                tie $o-&gt;{$key}, &#39;CMSBuilder::Property&#39;, $o, $key;
+                            }
                         }
-                    }
-                    $o-&gt;save if delete $o-&gt;{&#39;_save_after_load&#39;};
+                        $o-&gt;save if delete $o-&gt;{&#39;_save_after_load&#39;};
 
-                    # GH-117
-                    my $g = glob(&quot;/usr/bin/*&quot;);
+                        # GH-117
+                        my $g = glob(&quot;/usr/bin/*&quot;);
 
-                    return $o;
+                        return $o;
                     }
 
                     =head1 NAME
@@ -2912,27 +2920,27 @@
 
                     void setup() {
                     size(displayWidth, displayHeight, P3D);
-                    pg = createGraphics(displayWidth*2,displayHeight,P2D);
-                    pg.beginDraw();
-                    pg.background(255,255,255);
-                    //pg.smooth(8);
-                    pg.endDraw();
+                        pg = createGraphics(displayWidth*2,displayHeight,P2D);
+                        pg.beginDraw();
+                        pg.background(255,255,255);
+                        //pg.smooth(8);
+                        pg.endDraw();
                     }
                     void draw(){
-                    background(255);
+                        background(255);
                     }
                 </code>
             </pre>
             <div class="lang-title">Python Profile</div>
             <pre>
                 <code class="profile">
-                        261917242 function calls in 686.251 CPU seconds
+                    261917242 function calls in 686.251 CPU seconds
 
-                        ncalls  tottime  filename:lineno(function)
-                        152824  513.894  {method &#39;sort&#39; of &#39;list&#39; objects}
-                        129590630   83.894  rrule.py:842(__cmp__)
-                        129590630   82.439  {cmp}
-                        153900    1.296  rrule.py:399(_iter)
+                    ncalls         tottime  filename:lineno(function)
+                    152824         513.894  {method &#39;sort&#39; of &#39;list&#39; objects}
+                    129590630       83.894  rrule.py:842(__cmp__)
+                    129590630       82.439  {cmp}
+                    153900           1.296  rrule.py:399(_iter)
                     304393/151570    0.963  rrule.py:102(_iter_cached)
                 </code>
             </pre>
@@ -3309,24 +3317,24 @@
                     class Zebra; def inspect; &quot;X#{2 + self.object_id}&quot; end end
 
                     module ABC::DEF
-                    include Comparable
+                        include Comparable
 
-                    # @param test
-                    # @return [String] nothing
-                    def foo(test)
-                        Thread.new do |blockvar|
-                        ABC::DEF.reverse(:a_symbol, :&#39;a symbol&#39;, :&lt;=&gt;, &#39;test&#39; + ?\012)
-                        answer = valid?4 &amp;&amp; valid?CONST &amp;&amp; ?A &amp;&amp; ?A.ord
-                        end.join
-                    end
+                        # @param test
+                        # @return [String] nothing
+                        def foo(test)
+                            Thread.new do |blockvar|
+                            ABC::DEF.reverse(:a_symbol, :&#39;a symbol&#39;, :&lt;=&gt;, &#39;test&#39; + ?\012)
+                            answer = valid?4 &amp;&amp; valid?CONST &amp;&amp; ?A &amp;&amp; ?A.ord
+                            end.join
+                        end
 
-                    def [](index) self[index] end
-                    def ==(other) other == self end
+                        def [](index) self[index] end
+                        def ==(other) other == self end
                     end
 
                     class Car &lt; ActiveRecord::Base
-                    has_many :wheels, class_name: &#39;Wheel&#39;, foreign_key: &#39;car_id&#39;
-                    scope :available, -&gt; { where(available: true) }
+                        has_many :wheels, class_name: &#39;Wheel&#39;, foreign_key: &#39;car_id&#39;
+                        scope :available, -&gt; { where(available: true) }
                     end
 
                     hash = {1 =&gt; &#39;one&#39;, 2 =&gt; &#39;two&#39;}
@@ -3351,23 +3359,23 @@
                     INCLUDE &quot;R1&quot;;
                     LEAVE RIDER;
                     SELECT BILL_PERIOD
-                    WHEN &quot;WINTER&quot;
-                        BLOCK KWH
-                        FROM 0 TO 400 CHARGE $0.03709
-                        FROM 400 CHARGE $0.03000
-                        TOTAL $ENERGY_CHARGE_WIN;
-                    WHEN &quot;SUMMER&quot;
-                        $VOLTAGE_DISCOUNT_SUM = $0.00
-                    OTHERWISE
-                        $VOLTAGE_DISCOUNT_SUM = $1.00
+                        WHEN &quot;WINTER&quot;
+                            BLOCK KWH
+                            FROM 0 TO 400 CHARGE $0.03709
+                            FROM 400 CHARGE $0.03000
+                            TOTAL $ENERGY_CHARGE_WIN;
+                        WHEN &quot;SUMMER&quot;
+                            $VOLTAGE_DISCOUNT_SUM = $0.00
+                        OTHERWISE
+                            $VOLTAGE_DISCOUNT_SUM = $1.00
                     END SELECT;
                     /* Report top five peaks */
                     LABEL PK.NM &quot;Peak Number&quot;;
                     SAVE_UPDATE MV TO TABLE &quot;METERVALUE&quot;;
 
                     FOR EACH INX IN ARRAYUPPERBOUND(#MYARRAY[])
-                    #MYARRAY[INX].VALUE = 2;
-                    CLEAR #MYARRAY[];
+                        #MYARRAY[INX].VALUE = 2;
+                        CLEAR #MYARRAY[];
                     END FOR
 
                     //Interval Data
@@ -3442,7 +3450,7 @@
                     case class Person(name: String, age: Int)
 
                     def absoluteValue(n: Int): Int =
-                    if (n &lt; 0) -n else n
+                        if (n &lt; 0) -n else n
 
                     val hux = &quot;hux&quot;
                     def mux = &quot;mux&quot;
@@ -3451,11 +3459,11 @@
                     type ξ[A] = (A, A)
 
                     trait Hist { lhs =&gt;
-                    def ⊕(rhs: Hist): Hist
+                        def ⊕(rhs: Hist): Hist
                     }
 
                     def gsum[A: Ring](as: Seq[A]): A =
-                    as.foldLeft(Ring[A].zero)(_ + _)
+                        as.foldLeft(Ring[A].zero)(_ + _)
 
                     sealed trait Compass
                     case object North extends Compass
@@ -3464,24 +3472,24 @@
                     case object West extends Compass
 
                     trait Cake {
-                    type T;
-                    val things: Seq[T]
+                        type T;
+                        val things: Seq[T]
 
-                    abstract class Spindler
+                        abstract class Spindler
 
-                    def spindle(s: Spindler, ts: Seq[T], reversed: Boolean = false): Seq[T]
+                        def spindle(s: Spindler, ts: Seq[T], reversed: Boolean = false): Seq[T]
                     }
 
                     val colors = Map(
-                    &quot;red&quot; -&gt; 0xFF0000,
-                    &quot;turquoise&quot; -&gt; 0x00FFFF,
-                    &quot;black&quot; -&gt; 0x000000,
-                    &quot;orange&quot; -&gt; 0xFF8040,
-                    &quot;brown&quot; -&gt; 0x804000)
+                        &quot;red&quot; -&gt; 0xFF0000,
+                        &quot;turquoise&quot; -&gt; 0x00FFFF,
+                        &quot;black&quot; -&gt; 0x000000,
+                        &quot;orange&quot; -&gt; 0xFF8040,
+                        &quot;brown&quot; -&gt; 0x804000)
 
                     lazy val ns = for {
-                    x &lt;- 0 until 100
-                    y &lt;- 0 until 100
+                        x &lt;- 0 until 100
+                        y &lt;- 0 until 100
                     } yield (x + y) * 33.33
                 </code>
             </pre>
@@ -3510,12 +3518,12 @@
 
                     (define (find-first func lst)
                     (call-with-current-continuation
-                    (lambda (return-immediately)
-                    (for-each (lambda (x)
-                        (if (func x)
-                            (return-immediately x)))
-                            lst)
-                    #f)))
+                        (lambda (return-immediately)
+                        (for-each (lambda (x)
+                            (if (func x)
+                                (return-immediately x)))
+                                lst)
+                        #f)))
                 </code>
             </pre>
             <div class="lang-title">Scilab</div>
@@ -3523,13 +3531,13 @@
                 <code class="scilab">
                     // A comment
                     function I = foo(dims, varargin)
-                    d=[1; matrix(dims(1:$-1),-1,1)]
-                    for i=1:size(varargin)
-                        if varargin(i)==[] then
-                        I=[],
-                        return;
+                        d=[1; matrix(dims(1:$-1),-1,1)]
+                        for i=1:size(varargin)
+                            if varargin(i)==[] then
+                                I=[],
+                                return;
+                            end
                         end
-                    end
                     endfunction
 
                     b = cos(a) + cosh(a);
@@ -3597,9 +3605,7 @@
                     }
 
                     a {
-                    color: $colorGreen;
-                    &amp;:hover { color: $colorGreenDark; }
-                    &amp;:visited { color: #c458cb; }
+                        color:  ited { color: #c458cb; }
                     }
 
                     @for $i from 1 through 5 {
@@ -3609,9 +3615,9 @@
                     }
 
                     @mixin mobile {
-                    @media screen and (max-width : 600px) {
-                        @content;
-                    }
+                        @media screen and (max-width : 600px) {
+                            @content;
+                        }
                     }
                 </code>
             </pre>
@@ -3737,6 +3743,14 @@
                                 sorted removeFirst.
                                 sorted add: rnd next]].
                         Transcript cr; show: &#39;Time for SortedCollection: &#39; , time printString , &#39; msecs&#39;
+
+                        array.
+                            1
+                                to: n
+                                do: [:i |
+                                    sorted removeFirst.
+                                    sorted add: rnd next]].
+                            Transcript cr; show: 'Time for SortedCollection: ' , time printString , ' msecs'
                 </code>
             </pre>
             <div class="lang-title">SML</div>
@@ -3999,7 +4013,7 @@
 
                     // mixin/function
                     container()
-                    max-width 980px
+                        max-width 980px
 
                     // mixin/function with parameters
                     buttonBG($color = green)
@@ -4009,13 +4023,13 @@
                         background-color #B22222
 
                     button
-                    buttonBG(red)
+                        buttonBG(red)
 
                     #content, .content
-                    font Tahoma, Chunkfive, sans-serif
-                    background url(&#39;hatch.png&#39;)
-                    color #F0F0F0 !important
-                    width 100%
+                        font Tahoma, Chunkfive, sans-serif
+                        background url(&#39;hatch.png&#39;)
+                        color #F0F0F0 !important
+                        width 100%
                 </code>
             </pre>
             <div class="lang-title">Swift</div>
@@ -4097,12 +4111,12 @@
                     */
                     enum Numberz
                     {
-                    ONE = 1,
-                    TWO,
-                    THREE,
-                    FIVE = 5,
-                    SIX,
-                    EIGHT = 8
+                        ONE = 1,
+                        TWO,
+                        THREE,
+                        FIVE = 5,
+                        SIX,
+                        EIGHT = 8
                     }
 
                     const Numberz myNumberz = Numberz.ONE;
@@ -4136,13 +4150,13 @@
             <pre>
                 <code class="twig">
                     {% if posts|length %}
-                    {% for article in articles %}
-                    &amp;lt;div&amp;gt;
-                    {{ article.title|upper() }}
+                        {% for article in articles %}
+                        &amp;lt;div&amp;gt;
+                        {{ article.title|upper() }}
 
-                    {# outputs &#39;WELCOME&#39; #}
-                    &amp;lt;/div&amp;gt;
-                    {% endfor %}
+                        {# outputs &#39;WELCOME&#39; #}
+                        &amp;lt;/div&amp;gt;
+                        {% endfor %}
                     {% endif %}
 
                     {% set user = json_encode(user) %}
@@ -4156,11 +4170,12 @@
                     Comments may be long and multiline.
                     Markup is &amp;lt;em&amp;gt;not&amp;lt;/em&amp;gt; highlighted within comments.
                     #}
-                    </code>
-                    </pre>
-                            <div class="lang-title">TypeScript</div>
-                            <pre>
-                    <code class="typescript">class MyClass {
+                </code>
+            </pre>
+            <div class="lang-title">TypeScript</div>
+            <pre>
+                <code class="typescript">
+                    class MyClass {
                         public static myValue: string;
                         constructor(init: string) {
                         this.myValue = init;
@@ -4245,7 +4260,8 @@
                     #Region &quot;Code&quot;
                         &#39; Cheers!
                         &lt;STAThread()&gt; _
-                        Public Shared Sub Main(ByVal args() As String, ParamArray arr As Object) Handles Form1.Click
+                        Public Shared Sub Main(ByVal args() As String, ParamArray arr As Object)
+                    Handles Form1.Click
                         On Error Resume Next
                         If ABC Then
                             While ABC : Console.WriteLine() : End While
@@ -4261,18 +4277,18 @@
                         Else
                             Dim l As New System.Collections.List&lt;String&gt;()
                             SyncLock l
-                            If TypeOf l Is Decimal And l IsNot Nothing Then
-                                RemoveHandler button1.Paint, delegate
+                                If TypeOf l Is Decimal And l IsNot Nothing Then
+                                    RemoveHandler button1.Paint, delegate
+                                End If
+                                Dim d = New System.Threading.Thread(AddressOf ThreadProc)
+                                Dim a = New Action(Sub(x, y) x + y)
+                                Static u = From x As String In l Select x.Substring(2, 4) Where x.Length &gt; 0
+                                End SyncLock
+                                Do : Laugh() : Loop Until hello = 4
                             End If
-                            Dim d = New System.Threading.Thread(AddressOf ThreadProc)
-                            Dim a = New Action(Sub(x, y) x + y)
-                            Static u = From x As String In l Select x.Substring(2, 4) Where x.Length &gt; 0
-                            End SyncLock
-                            Do : Laugh() : Loop Until hello = 4
-                        End If
                         End Sub
                     #End Region
-                    End Class
+                        End Class
                     End Namespace
                 </code>
             </pre>
@@ -4282,7 +4298,7 @@
                     &lt;body&gt;
                     &lt;%
                     If i &lt;  10 Then
-                    response.write(&quot;Good morning!&quot;)
+                        response.write(&quot;Good morning!&quot;)
                     End If
                     %&gt;
                     &lt;/body&gt;
@@ -4300,24 +4316,24 @@
 
                         &#39; skipping empty strings and comments
                         if mid(s, 1, 1) &lt;&gt; &quot;#&quot; and len(s) &gt; 0 then
-                        &#39; obtaining key and value
-                        parts = split(s, &quot;=&quot;, -1, 1)
+                            &#39; obtaining key and value
+                            parts = split(s, &quot;=&quot;, -1, 1)
 
-                        if ubound(parts)+1 = 2 then
-                            parts(0) = trim(parts(0))
-                            parts(1) = trim(parts(1))
+                            if ubound(parts)+1 = 2 then
+                                parts(0) = trim(parts(0))
+                                parts(1) = trim(parts(1))
 
-                            &#39; reading configuration and filenames
-                            select case lcase(parts(0))
-                            case &quot;uncompressed&quot;&quot;_postfix&quot; cfg.item(&quot;uncompressed&quot;&quot;_postfix&quot;) = parts(1)
-                            case &quot;f&quot;
-                                        options = split(parts(1), &quot;|&quot;, -1, 1)
-                                        if ubound(options)+1 = 2 then
-                                        &#39; 0: filename,  1: options
-                                        ff.add trim(options(0)), trim(options(1))
-                                        end if
-                            end select
-                        end if
+                                &#39; reading configuration and filenames
+                                select case lcase(parts(0))
+                                case &quot;uncompressed&quot;&quot;_postfix&quot; cfg.item(&quot;uncompressed&quot;&quot;_postfix&quot;) = parts(1)
+                                case &quot;f&quot;
+                                            options = split(parts(1), &quot;|&quot;, -1, 1)
+                                            if ubound(options)+1 = 2 then
+                                            &#39; 0: filename,  1: options
+                                            ff.add trim(options(0)), trim(options(1))
+                                            end if
+                                end select
+                            end if
                         end if
                     next
                 </code>
@@ -4422,11 +4438,11 @@
 
                     &quot; switch on highlighting
                     function UnComment(fl, ll)
-                    while idx &gt;= a:ll
-                        let srclines=getline(idx)
-                        let dstlines=substitute(srclines, b:comment, &quot;&quot;, &quot;&quot;)
-                        call setline(idx, dstlines)
-                    endwhile
+                        while idx &gt;= a:ll
+                            let srclines=getline(idx)
+                            let dstlines=substitute(srclines, b:comment, &quot;&quot;, &quot;&quot;)
+                            call setline(idx, dstlines)
+                        endwhile
                     endfunction
                 </code>
             </pre>

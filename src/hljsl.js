@@ -1,5 +1,6 @@
+/* eslint-disable no-param-reassign */
 class HighlightLite {
-    
+
     #autoLoad = true;
 
     #hideNumbers = false;
@@ -24,13 +25,13 @@ class HighlightLite {
      * Watch a block for intersection events and when it appears to be coming up
      * in the viewport (or already showing), process the block. This is used to
      * lazy process (load) code blocks.
-     * 
+     *
      * @param {Array} entries An array of observed events that have triggered this function.
      * @param {IntersectionObserver} observer The observer watching this element/event.
      */
     #blockInView(entries, observer) {
         entries.forEach((entry) => {
-            if(entry.isIntersecting){
+            if (entry.isIntersecting) {
                 observer.disconnect(); // Block is about to be processed so stop watching it.
                 this.highlight(entry.target);
             }
@@ -39,7 +40,7 @@ class HighlightLite {
 
     /**
      * Create a unique id.
-     * 
+     *
      * @returns {string} A generally unique id.
      */
     createId() {
@@ -48,7 +49,7 @@ class HighlightLite {
 
     /**
      * Connect to HLJSL's web worker.
-     * 
+     *
      * @returns {void} Used as a short circuit only.
      */
     connect() {
@@ -62,7 +63,7 @@ class HighlightLite {
 
     /**
      * Copy code from a block to the users clipboard.
-     * 
+     *
      * @param {HTMLElement} button The copy to clipboard button that was pressed.
      * @returns {void} Used as a short circuit.
      */
@@ -77,11 +78,11 @@ class HighlightLite {
         // Copy data to a temporary div.
         const tmpDiv = document.createElement('div');
         cells.forEach((cell) => {
-            tmpDiv.textContent += cell.textContent + '\n';
+            tmpDiv.textContent += `${cell.textContent}\n`;
         });
         // Copy the text from the temporary div to the clipboard using the Clipboard API.
         navigator.clipboard.writeText(tmpDiv.textContent.trimEnd())
-            .catch(function(error) {
+            .catch((error) => {
                 console.error('Failed to copy text to clipboard:', error);
             });
         // Remove the visual effect.
@@ -93,7 +94,7 @@ class HighlightLite {
 
     /**
      * Correct the padding of code blocks.
-     * 
+     *
      * @param {HTMLElement} elem The code element to process.
      */
     async #correctPadding(elem) {
@@ -125,21 +126,21 @@ class HighlightLite {
 
     /**
      * Disconnect from HLJSL's web worker.
-     * 
+     *
      * @returns {void} Used as a short circuit.
      */
     disconnect() {
         if (!this.#worker) {
             return;
         }
-        this.#worker = worker.terminate();
+        this.#worker.terminate();
         this.#worker = null;
     }
 
     async #ensureBaseStyles() {
         const stylesheets = document.styleSheets;
         for (let i = 0; i < stylesheets.length; i++) {
-            const {href} = stylesheets[i];
+            const { href } = stylesheets[i];
             if (href.includes('/hljsl')) {
                 return;
             }
@@ -152,7 +153,7 @@ class HighlightLite {
 
     /**
      * Detect what language the user is viewing the page in.
-     * 
+     *
      * @returns {string} The users valid BCP 47 language code.
      */
     getUserLanguage() {
@@ -170,10 +171,10 @@ class HighlightLite {
         }
         return userLanguage;
     }
-    
+
     /**
      * Share the version of HLJSL being used.
-     * 
+     *
      * @returns  {string} The current version on HLJSL.
      */
     getVersion() {
@@ -182,20 +183,20 @@ class HighlightLite {
 
     /**
      * Highlight a code element with HLJS using the HLJSL web worker.
-     * 
+     *
      * @param {HTMLElement} elem The code element to highlight.
      */
     highlight(elem) {
         // If the web worker is not connected do so now.
         if (!this.isConnected()) {
             /**
-             * NOTE: We do not connect automatically in case this page doesn't 
+             * NOTE: We do not connect automatically in case this page doesn't
              * have any code blocks to highlight.
              */
             this.connect();
         }
         // Do not waste time reprocessing a block.
-        if (elem.hasAttribute("hljsl-id")) { return; }
+        if (elem.hasAttribute('hljsl-id')) { return; }
         /**
          * This should have been added already but a deferred code block that the
          * user wants to manually process will be missing this.
@@ -216,7 +217,7 @@ class HighlightLite {
 
     /**
      * Process all code blocks found within the provided container (element).
-     * 
+     *
      * @param {HTMLElement} container The code element to highlight.
      */
     highlightAll(container) {
@@ -263,7 +264,7 @@ class HighlightLite {
 
     /**
      * Check if HLJSL's Web worker is connected.
-     * 
+     *
      * @returns {boolean} Boolean indicating the web worker connection state; true is connected.
      */
     isConnected() {
@@ -272,23 +273,23 @@ class HighlightLite {
 
     /**
      * Convert a string representing a boolean into an actual boolean.
-     * 
+     *
      * @param {string} str The string to convert to the correct boolean value.
-     * @returns 
+     * @returns
      */
-    isTrue(str){
-        if (typeof(str) === 'string'){
+    isTrue(str) {
+        if (typeof (str) === 'string') {
             str = str.trim().toLowerCase();
         }
-        switch(str){
+        switch (str) {
             case true:
-            case "true":
+            case 'true':
             case 1:
-            case "1":
-            case "on":
-            case "yes":
+            case '1':
+            case 'on':
+            case 'yes':
                 return true;
-            default: 
+            default:
                 return false;
         }
     }
@@ -302,7 +303,7 @@ class HighlightLite {
             for (let i = 0; i < mutationList.length; i++) {
                 const mutation = mutationList[i];
                 // Do no process unnecessary events; this may be unnecessary.
-                if (mutation.type != 'childList') {
+                if (mutation.type !== 'childList') {
                     return;
                 }
                 // Skip all elements that are not the body.
@@ -333,7 +334,7 @@ class HighlightLite {
                     // Lazy load blocks instead; recommended for pages with many code blocks.
                     const blockObserverOptions = {
                         root: null,
-                        rootMargin: `100%`,
+                        rootMargin: '100%',
                         threshold: 0
                     };
                     const blockObserver = new IntersectionObserver(
@@ -351,12 +352,12 @@ class HighlightLite {
             }
         });
         // Start the observer.
-        bodyObserver.observe(document.documentElement,  { childList: true, subtree: true });
+        bodyObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
 
     /**
      * Receives the response from HLJSL's web worker.
-     * 
+     *
      * @param {MessageEvent} evt The response from HLJSL's web worker.
      */
     #receiveResponse(evt) {
@@ -374,6 +375,7 @@ class HighlightLite {
          */
         elem.classList.add(msg.language);
     }
+
 }
 
 const hljsl = new HighlightLite();
