@@ -1,9 +1,10 @@
-- name: Build & Deploy
-  uses: JamesIves/github-pages-deploy-action@v4.4.3
+name: Build & Deploy
 
-on: [push]
-permissions:
-  contents: write
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   build-and-deploy:
     concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
