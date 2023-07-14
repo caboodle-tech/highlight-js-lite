@@ -304,7 +304,8 @@ class HighlightLite {
             console.log('OBSERVER START');
             for (let i = 0; i < mutationList.length; i++) {
                 const mutation = mutationList[i];
-                // Do no process unnecessary events; this may be unnecessary.
+                console.log(mutation.type, mutationList);
+                // Do no process unnecessary events; ignores attribute events.
                 if (mutation.type !== 'childList') {
                     return;
                 }
