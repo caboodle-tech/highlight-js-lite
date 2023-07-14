@@ -142,6 +142,29 @@
             <p>
                 The precompiled version of HLJSL uses the light and dark StackOverflow theme. If you would like to compile HLJSL with a different theme the process is fairly simple. Please visit the <a href="https://github.com/caboodle-tech/highlight-js-lite#compile-with-a-different-theme" target="_blank">compile with a different theme</a> section of the GitHub repository for more information.
             </p>
+            <div class="header">Configure</div>
+            <p>
+                HLJS is designed to require zero configuration but there are a few settings you can change using <a href="https://en.wikipedia.org/wiki/Query_string" target="_blank">query strings</a> at the end of the HLJSL's src url:
+            </p>
+            <ul>
+                <li>
+                    <strong>autoLoad=false</strong> will disable auto loading (auto processing) of code blocks.
+                </li>
+                <li>
+                    <strong>lazyLoad=false</strong> will disable lazy loading (lazy processing) of code blocks.
+                </li>
+                <li>
+                    <strong>noNumbers=true</strong> will disable showing the line numbers on processed blocks.
+                </li>
+            </ul>
+            <p>
+                If you wanted full control of when HLJS processes code blocks you would add code similar to the following in your head tag:
+            </p>
+            <pre class="hljsl hide-numbers">
+                <code>
+                    &lt;script src="./hljsl.min.js?autoLoad=false&lazyLoad=false"&gt;&lt;/script&gt;
+                </code>
+            </pre>
             <div class="header">Examples</div>
             <p>
                 If you believe in the adage <i>a picture is worth more than a thousand words</i> then the examples below are for you! These examples were copied from <a href="https://wcoder.github.io/highlightjs-line-numbers.js/" target="_blank">highlightjs line numbers</a> and is an entirely different project with no connection to HLJSL or Caboodle Tech. If you are looking to just add line numbers to your existing installation of highlight.js you probably want that project instead.

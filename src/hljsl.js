@@ -19,7 +19,6 @@ class HighlightLite {
         this.#initialize();
         this.#lang = this.getUserLanguage();
         this.#processBlocks();
-        console.log(this.#autoLoad, this.#lazyLoad, this.#hideNumbers);
     }
 
     /**
@@ -202,6 +201,13 @@ class HighlightLite {
          * This should have been added already but a deferred code block that the
          * user wants to manually process will be missing this.
          */
+        if (this.#hideNumbers) {
+            elem.parentElement.classList.add('hide-numbers');
+        }
+        /**
+         * This should have been added already but a deferred code block that the
+         * user wants to manually process will be missing this.
+         */
         elem.parentElement.classList.add('hljs');
         // eslint-disable-next-line no-param-reassign
         elem.dataset.hljslId = this.createId();
@@ -301,16 +307,13 @@ class HighlightLite {
      */
     #processBlocks() {
         const bodyObserver = new MutationObserver((mutationList, observer) => {
-            console.log('OBSERVER START');
             for (let i = 0; i < mutationList.length; i++) {
                 const mutation = mutationList[i];
-                console.log(mutation.type, mutationList);
                 // Do no process unnecessary events; ignores attribute events.
                 if (mutation.type !== 'childList') {
                     // eslint-disable-next-line no-continue
                     continue;
                 }
-                console.log('MUT EL', mutation.target.nodeName);
                 // Skip all elements that are not the body.
                 if (mutation.target.nodeName !== 'BODY') {
                     // eslint-disable-next-line no-continue
@@ -320,7 +323,6 @@ class HighlightLite {
                  * Body element has been added to the DOM so search it and process
                  * all the code blocks found inside it.
                  */
-                this.#ensureBaseStyles();
                 const blocks = mutation.target.querySelectorAll('pre code');
                 blocks.forEach(async (block) => {
                     block.parentElement.classList.add('hljs');
@@ -355,9 +357,9 @@ class HighlightLite {
                  * call the `highlight` or `highlightAll` methods.
                  */
                 observer.disconnect();
+                return; // Kills the loop which would trigger another reprocessing!
             }
         });
-        console.log('OBSERVER CREATE');
         // Start the observer.
         bodyObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
