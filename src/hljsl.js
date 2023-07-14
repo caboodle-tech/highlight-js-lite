@@ -19,6 +19,7 @@ class HighlightLite {
         this.#initialize();
         this.#lang = this.getUserLanguage();
         this.#processBlocks();
+        console.log(this.#autoLoad, this.#lazyLoad, this.#hideNumbers);
     }
 
     /**
@@ -300,12 +301,14 @@ class HighlightLite {
      */
     #processBlocks() {
         const bodyObserver = new MutationObserver((mutationList, observer) => {
+            console.log('OBSERVER START');
             for (let i = 0; i < mutationList.length; i++) {
                 const mutation = mutationList[i];
                 // Do no process unnecessary events; this may be unnecessary.
                 if (mutation.type !== 'childList') {
                     return;
                 }
+                console.log('MUT EL', mutation.target.nodeName);
                 // Skip all elements that are not the body.
                 if (mutation.target.nodeName !== 'BODY') {
                     return;
@@ -351,6 +354,7 @@ class HighlightLite {
                 observer.disconnect();
             }
         });
+        console.log('OBSERVER CREATE');
         // Start the observer.
         bodyObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
@@ -380,5 +384,5 @@ class HighlightLite {
 
 const hljsl = new HighlightLite();
 
-// Rollup will create an iife and we want only some methods to be publicly accessible.
+// TODO: Rollup will create an iife and we want only some methods to be publicly accessible.
 export default hljsl;
