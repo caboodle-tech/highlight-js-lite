@@ -307,12 +307,14 @@ class HighlightLite {
                 console.log(mutation.type, mutationList);
                 // Do no process unnecessary events; ignores attribute events.
                 if (mutation.type !== 'childList') {
-                    return;
+                    // eslint-disable-next-line no-continue
+                    continue;
                 }
                 console.log('MUT EL', mutation.target.nodeName);
                 // Skip all elements that are not the body.
                 if (mutation.target.nodeName !== 'BODY') {
-                    return;
+                    // eslint-disable-next-line no-continue
+                    continue;
                 }
                 /**
                  * Body element has been added to the DOM so search it and process
