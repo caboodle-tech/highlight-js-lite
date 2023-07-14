@@ -381,10 +381,4 @@ class HighlightLite {
 const hljsl = new HighlightLite();
 
 // Rollup will create an iife and we want only some methods to be publicly accessible.
-export default {
-    copyToClipboard: hljsl.copyToClipboard,
-    getUserLanguage: hljsl.getUserLanguage,
-    getVersion: hljsl.getVersion,
-    highlight: hljsl.highlight,
-    highlightAll: hljsl.highlightAll
-};
+export default hljsl;
