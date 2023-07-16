@@ -115,7 +115,10 @@
                     Automatic code highlighting for <code>&lt;pre&gt;&lt;code&gt;</code> blocks using WebWorkers for performance.
                 </li>
                 <li>
-                    Automatic line numbers for code blocks which can be disabled according to preference.
+                    Automatic line numbers for <code>&lt;pre&gt;&lt;code&gt;</code> blocks which can be disabled according to preference.
+                </li>
+                <li>
+                    Automatic pre padding (left-padding) correction allowing you to indent <code>&lt;pre&gt;&lt;code&gt;</code> blocks just like any other code in your source files; view this pages source for examples.
                 </li>
                 <li>
                     Copy code to clipboard button with built-in language (i18n) support.
@@ -126,7 +129,7 @@
             </ul>
             <div class="header">Usage</div>
             <p>
-                HLJS comes precompiled and can be added to your site by downloading <a href="hljsl.zip" target="_blank" download>this zip file</a> and following these steps: 
+                HLJSL comes precompiled and can be added to your site by downloading <a href="hljsl.zip" target="_blank" download>this zip file</a> and following these steps: 
             </p>
             <ol>
                 <li>
@@ -144,7 +147,7 @@
             </p>
             <div class="header">Configure</div>
             <p>
-                HLJS is designed to require zero configuration but there are a few settings you can change using <a href="https://en.wikipedia.org/wiki/Query_string" target="_blank">query strings</a> at the end of the HLJSL's src url:
+                HLJSL is designed to require zero configuration but there are a few settings you can change using <a href="https://en.wikipedia.org/wiki/Query_string" target="_blank">query strings</a> at the end of the HLJSL's src url:
             </p>
             <ul>
                 <li>
@@ -154,15 +157,39 @@
                     <strong>lazyLoad=false</strong> will disable lazy loading (lazy processing) of code blocks.
                 </li>
                 <li>
-                    <strong>noNumbers=true</strong> will disable showing the line numbers on processed blocks.
+                    <strong>hideNumbers=true</strong> will disable showing the line numbers on processed blocks.
                 </li>
             </ul>
             <p>
-                If you wanted full control of when HLJS processes code blocks you would add code similar to the following in your head tag:
+                If you wanted full control of when HLJSL processes code blocks you would add code similar to the following in your head tag:
             </p>
             <pre class="hljsl hide-numbers">
                 <code>
                     &lt;script src="./hljsl.min.js?autoLoad=false&lazyLoad=false"&gt;&lt;/script&gt;
+                </code>
+            </pre>
+            <p>
+                You can also use the css classes <code>hide-numbers</code> and <code>show-numbers</code> to overwrite the current settings for individual <code>&lt;pre&gt;&lt;code&gt;</code> blocks:
+            </p>
+            <pre class="hide-numbers">
+                <code>
+                    &lt;pre class="hljsl hide-numbers"&gt;
+                        &lt;code&gt;
+                            &lt;!--
+                                The class hide-numbers will hide the line numbers even
+                                if they are supposed to display in your code blocks.
+                            --&gt;
+                        &lt;code&gt;
+                    &lt;/pre&gt;
+
+                    &lt;pre class="hljsl show-numbers"&gt;
+                        &lt;code&gt;
+                            &lt;!--
+                                The class show-numbers will show the line numbers even
+                                if they are supposed to be hidden by your settings.
+                            --&gt;
+                        &lt;code&gt;
+                    &lt;/pre&gt;
                 </code>
             </pre>
             <div class="header">Examples</div>

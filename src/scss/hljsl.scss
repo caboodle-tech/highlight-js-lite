@@ -137,6 +137,7 @@ pre.hljs, .hljs pre {
 
 .hljsl-table {
     border-collapse: collapse;
+    width: 100%;
 
     tr {
         width: 100%;
@@ -187,6 +188,16 @@ pre.hljs, .hljs pre {
         tr {
             td:first-child {
                 display: none;
+            }
+        }
+    }
+}
+
+.show-numbers, .hide-numbers.show-numbers, .hide-numbers .show-numbers {
+    .hljsl-table {
+        tr {
+            td:first-child {
+                display: table-cell;
             }
         }
     }
