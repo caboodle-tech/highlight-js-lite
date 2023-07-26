@@ -5,18 +5,23 @@ class HighlightLite {
 
     #hideNumbers = false;
 
+    #ignoreElements = [];
+
     #lang = 'en-us';
 
     #lazyLoad = true;
+
+    #onlyAutoProcess = [document];
 
     #root = '';
 
     #worker = null;
 
-    #version = '1.0.0';
+    #version = '1.1.0';
 
-    constructor() {
+    constructor(config = {}) {
         this.#initialize();
+        if (Object.keys(config).length === 0) { this.#checkForGlobalConfig(); }
         this.#lang = this.getUserLanguage();
         this.#processBlocks();
     }
@@ -36,6 +41,31 @@ class HighlightLite {
                 this.highlight(entry.target);
             }
         });
+    }
+
+    #checkForGlobalConfig() {
+        const globalConfig = window.hljslConfig;
+        if (!globalConfig) { return; }
+        if (this.whatIs(globalConfig) !== 'object') { return; }
+
+        if (this.whatIs(globalConfig.autoLoad) === 'boolean') {
+            this.#autoLoad = globalConfig.autoLoad;
+        }
+        if (this.whatIs(globalConfig.hideNumbers) === 'boolean') {
+            this.#hideNumbers = globalConfig.hideNumbers;
+        }
+        if (this.whatIs(globalConfig.ignoreElements) === 'array') {
+            this.#ignoreElements = globalConfig.ignoreElements;
+        }
+        if (this.whatIs(globalConfig.lang) === 'string') {
+            this.#lang = globalConfig.lang;
+        }
+        if (this.whatIs(globalConfig.lazyLoad) === 'boolean') {
+            this.#lazyLoad = globalConfig.lazyLoad;
+        }
+        if (this.whatIs(globalConfig.onlyAutoProcess) === 'array') {
+            this.#onlyAutoProcess = globalConfig.onlyAutoProcess;
+        }
     }
 
     /**
@@ -385,9 +415,23 @@ class HighlightLite {
         elem.classList.add(msg.language);
     }
 
+    /**
+     * The fastest way to get the actual type of anything in JavaScript.
+     *
+     * {@link https://jsbench.me/ruks9jljcu/2 | See benchmarks}.
+     *
+     * @param {*} unknown Anything you wish to check the type of.
+     * @return {string|undefined} The type in lowercase of the unknown value passed in or undefined.
+     */
+    whatIs(unknown) {
+        try {
+            return ({}).toString.call(unknown).match(/\s([^\]]+)/)[1].toLowerCase();
+        } catch (e) { return undefined; }
+    }
+
 }
 
-const hljsl = new HighlightLite();
+window.hljsl = new HighlightLite();
 
 // TODO: Rollup will create an iife and we want only some methods to be publicly accessible.
-export default hljsl;
+export default HighlightLite;
