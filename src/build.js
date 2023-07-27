@@ -89,11 +89,12 @@ class Builder {
     buildHljslZip() {
         Print.notice('Zipping precompiled production bundle:');
         const filesToZip = [
+            Path.join(__dirname, '../dist/highlight.min.js'),
+            Path.join(__dirname, '../dist/hljsl-worker.min.js'),
+            Path.join(__dirname, '../dist/hljsl-worker.min.js.map'),
             Path.join(__dirname, '../dist/hljsl.min.css'),
             Path.join(__dirname, '../dist/hljsl.min.js'),
-            Path.join(__dirname, '../dist/hljsl.min.js.map'),
-            Path.join(__dirname, '../dist/hljsl-worker.min.js'),
-            Path.join(__dirname, '../dist/hljsl-worker.min.js.map')
+            Path.join(__dirname, '../dist/hljsl.min.js.map')
         ];
         this.zipProductionBundle(filesToZip, Path.join(__dirname, '../dist/hljsl.zip'));
     }
