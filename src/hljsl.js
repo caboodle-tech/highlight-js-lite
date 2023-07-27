@@ -1,3 +1,5 @@
+let autoRunCompleted = false;
+
 /* eslint-disable no-param-reassign */
 class HighlightLite {
 
@@ -11,7 +13,7 @@ class HighlightLite {
 
     #lazyLoad = true;
 
-    #onlyAutoProcess = [document];
+    #onlyAutoProcess = ['body'];
 
     #root = '';
 
@@ -21,9 +23,16 @@ class HighlightLite {
 
     constructor(config = {}) {
         this.#initialize();
-        if (Object.keys(config).length === 0) { this.#checkForGlobalConfig(); }
-        this.#lang = this.getUserLanguage();
-        this.#processBlocks();
+        // Set or check for alternative config options.
+        if (Object.keys(config).length === 0) {
+            this.#checkForGlobalConfig();
+        } else {
+            this.setConfig(config);
+        }
+        // Only the primary instance of HLJSL should auto run.
+        if (autoRunCompleted) { return; }
+        autoRunCompleted = true;
+        this.#waitForBody();
     }
 
     /**
@@ -43,29 +52,13 @@ class HighlightLite {
         });
     }
 
+    /**
+     * Helper method that checks for and uses the users global config if set.
+     */
     #checkForGlobalConfig() {
         const globalConfig = window.hljslConfig;
         if (!globalConfig) { return; }
-        if (this.whatIs(globalConfig) !== 'object') { return; }
-
-        if (this.whatIs(globalConfig.autoLoad) === 'boolean') {
-            this.#autoLoad = globalConfig.autoLoad;
-        }
-        if (this.whatIs(globalConfig.hideNumbers) === 'boolean') {
-            this.#hideNumbers = globalConfig.hideNumbers;
-        }
-        if (this.whatIs(globalConfig.ignoreElements) === 'array') {
-            this.#ignoreElements = globalConfig.ignoreElements;
-        }
-        if (this.whatIs(globalConfig.lang) === 'string') {
-            this.#lang = globalConfig.lang;
-        }
-        if (this.whatIs(globalConfig.lazyLoad) === 'boolean') {
-            this.#lazyLoad = globalConfig.lazyLoad;
-        }
-        if (this.whatIs(globalConfig.onlyAutoProcess) === 'array') {
-            this.#onlyAutoProcess = globalConfig.onlyAutoProcess;
-        }
+        this.setConfig(globalConfig);
     }
 
     /**
@@ -128,6 +121,8 @@ class HighlightLite {
      * @param {HTMLElement} elem The code element to process.
      */
     async #correctPadding(elem) {
+        // Don't waste time reprocessing a block.
+        if (elem.classList.contains('fixed-padding')) { return; }
         // We must ignore any empty lines until actual code is encountered.
         let indentation = 0;
         let doIndentation = true;
@@ -150,8 +145,9 @@ class HighlightLite {
             // Remove the unnecessary indentation (padding) at the start of each line.
             lines[i] = line.substring(indentation);
         });
-        // Make the replacement in the DOM any extra empty new line at the end.
+        // Make the replacement in the DOM and remove any extra empty new line at the end.
         elem.innerText = lines.join('\n').trimEnd();
+        elem.classList.add('fixed-padding');
     }
 
     /**
@@ -167,18 +163,42 @@ class HighlightLite {
         this.#worker = null;
     }
 
-    async #ensureBaseStyles() {
-        const stylesheets = document.styleSheets;
-        for (let i = 0; i < stylesheets.length; i++) {
-            const { href } = stylesheets[i];
-            if (href.includes('/hljsl')) {
-                return;
-            }
-        }
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = `${this.#root}/hljsl.min.css`;
-        document.head.appendChild(link);
+    /**
+     * Check the status of the page being auto loaded (processed).
+     *
+     * @returns {boolean} True if the primary HLJSL instance auto loaded (processed) the page.
+     */
+    getAutoRunStatus() {
+        return autoRunCompleted;
+    }
+
+    /**
+     * Build the querySelectorAll string to search and find all specified elements.
+     *
+     * @param {array} find An array of element tags, classes prefixed with the css dot (.), and/or
+     *                     ids prefixed with the css pound (#) to locate in the page.
+     *
+     * @returns {string} The querySelectorAll string to locate all your requested elements.
+     */
+    getQuerySelectorFindAllString(find = []) {
+        if (find.length === 0) { return ''; }
+        return find.join(', ');
+    }
+
+    /**
+     * Builds the query string meant to be used with querySelectorAll and allows not searching
+     * within classes, ids, and/or elements.
+     *
+     * @param {string} find The query selector you would like to find.
+     * @param {array} notWithin An array of element tags, classes prefixed with the css dot (.), and/or
+     *                          ids prefixed with the css pound (#) to not search in.
+     *
+     * @returns {string} The proper query selector string to use with querySelectorAll.
+     */
+    getQuerySelectorNotWithinString(find, notWithin = []) {
+        if (notWithin.length === 0) { return find; }
+        const ignoredSelectors = notWithin.join(', ');
+        return `:not(${ignoredSelectors}) > ${find}`;
     }
 
     /**
@@ -216,7 +236,7 @@ class HighlightLite {
      *
      * @param {HTMLElement} elem The code element to highlight.
      */
-    highlight(elem) {
+    async highlight(elem) {
         // If the web worker is not connected do so now.
         if (!this.isConnected()) {
             /**
@@ -234,6 +254,7 @@ class HighlightLite {
         if (this.#hideNumbers) {
             elem.parentElement.classList.add('hide-numbers');
         }
+        await this.#correctPadding(elem);
         /**
          * This should have been added already but a deferred code block that the
          * user wants to manually process will be missing this.
@@ -272,6 +293,8 @@ class HighlightLite {
      * Initializes HLJSL by determining its root location and checking for various options (settings).
      */
     #initialize() {
+        // Set the apps language.
+        this.#lang = this.getUserLanguage();
         // Determine the root (directory) location of HLJSL.
         this.#root = window?.location?.origin;
         let hljsScriptSrc = '';
@@ -332,66 +355,46 @@ class HighlightLite {
     }
 
     /**
-     * Using a mutation observer watch for pre code blocks being added to the page
-     * and immediately start to process them.
+     * Automatically process code blocks according to the default or global settings.
      */
     #processBlocks() {
-        const bodyObserver = new MutationObserver((mutationList, observer) => {
-            for (let i = 0; i < mutationList.length; i++) {
-                const mutation = mutationList[i];
-                // Do no process unnecessary events; ignores attribute events.
-                if (mutation.type !== 'childList') {
-                    // eslint-disable-next-line no-continue
-                    continue;
-                }
-                // Skip all elements that are not the body.
-                if (mutation.target.nodeName !== 'BODY') {
-                    // eslint-disable-next-line no-continue
-                    continue;
-                }
-                /**
-                 * Body element has been added to the DOM so search it and process
-                 * all the code blocks found inside it.
-                 */
-                const blocks = mutation.target.querySelectorAll('pre code');
-                blocks.forEach(async (block) => {
-                    block.parentElement.classList.add('hljs');
-                    // Before fixing the padding check if we need to hide line numbers.
-                    if (this.#hideNumbers) {
-                        block.classList.add('hide-numbers');
-                    }
-                    await this.#correctPadding(block);
-                    // Stop processing if autoLoad is false; we only fix the padding and spacing.
-                    if (!this.#autoLoad) { return; }
-                    // Process blocks now or lazy load them?
-                    if (!this.#lazyLoad) {
-                        // Process blocks now.
-                        this.highlight(block);
-                        return;
-                    }
-                    // Lazy load blocks instead; recommended for pages with many code blocks.
-                    const blockObserverOptions = {
-                        root: null,
-                        rootMargin: '100%',
-                        threshold: 0
-                    };
-                    const blockObserver = new IntersectionObserver(
-                        this.#blockInView.bind(this),
-                        blockObserverOptions
-                    );
-                    blockObserver.observe(block);
-                });
-                /**
-                 * Stop the observer to reduce resource use on this page. If any
-                 * code blocks are added later the user will need to manually
-                 * call the `highlight` or `highlightAll` methods.
-                 */
-                observer.disconnect();
-                return; // Kills the loop which would trigger another reprocessing!
+        // We automatically fix all code block padding and show or hide line numbers no matter what.
+        document.body.querySelectorAll('pre code').forEach((block) => {
+            // Before fixing the padding check if we need to hide line numbers.
+            if (this.#hideNumbers) {
+                block.classList.add('hide-numbers');
             }
+            this.#correctPadding(block);
         });
-        // Start the observer.
-        bodyObserver.observe(document.documentElement, { childList: true, subtree: true });
+        // Now process the page according to the users settings.
+        const selector = this.getQuerySelectorNotWithinString('pre code', this.#ignoreElements);
+        const autoProcess = this.getQuerySelectorFindAllString(this.#onlyAutoProcess);
+        const elems = document.querySelectorAll(autoProcess);
+        elems.forEach((elem) => {
+            const blocks = elem.querySelectorAll(selector);
+            blocks.forEach(async (block) => {
+                block.parentElement.classList.add('hljs');
+                // Stop processing if autoLoad is false; we only fix the padding and spacing.
+                if (!this.#autoLoad) { return; }
+                // Process blocks now or lazy load them?
+                if (!this.#lazyLoad) {
+                    // Process blocks now.
+                    this.highlight(block);
+                    return;
+                }
+                // Lazy load blocks instead; recommended for pages with many code blocks.
+                const blockObserverOptions = {
+                    root: null,
+                    rootMargin: '100%',
+                    threshold: 0
+                };
+                const blockObserver = new IntersectionObserver(
+                    this.#blockInView.bind(this),
+                    blockObserverOptions
+                );
+                blockObserver.observe(block);
+            });
+        });
     }
 
     /**
@@ -416,6 +419,78 @@ class HighlightLite {
     }
 
     /**
+     * Allows changing the default settings being used by this instance of HLJSL.
+     *
+     * @param {object} config The settings you would like to set.
+     * @returns
+     */
+    setConfig(config) {
+        if (this.whatIs(config) !== 'object') { return; }
+
+        if (this.whatIs(config.autoLoad) === 'boolean') {
+            this.#autoLoad = config.autoLoad;
+        }
+
+        if (this.whatIs(config.hideNumbers) === 'boolean') {
+            this.#hideNumbers = config.hideNumbers;
+        }
+
+        if (this.whatIs(config.ignoreElements) === 'array') {
+            this.#ignoreElements = config.ignoreElements;
+        }
+
+        if (this.whatIs(config.lang) === 'string') {
+            this.#lang = config.lang;
+        }
+
+        if (this.whatIs(config.lazyLoad) === 'boolean') {
+            this.#lazyLoad = config.lazyLoad;
+        }
+
+        if (this.whatIs(config.onlyAutoProcess) === 'array') {
+            if (config.onlyAutoProcess.length > 0) {
+                this.#onlyAutoProcess = config.onlyAutoProcess;
+            }
+        }
+    }
+
+    /**
+     * Using a mutation observer watch for pre code blocks being added to the page
+     * and immediately start to process them.
+     */
+    #waitForBody() {
+        const bodyObserver = new MutationObserver((mutationList, observer) => {
+            for (let i = 0; i < mutationList.length; i++) {
+                const mutation = mutationList[i];
+                // Do no process unnecessary events; ignores attribute events.
+                if (mutation.type !== 'childList') {
+                    // eslint-disable-next-line no-continue
+                    continue;
+                }
+                // Skip all elements that are not the body.
+                if (mutation.target.nodeName !== 'BODY') {
+                    // eslint-disable-next-line no-continue
+                    continue;
+                }
+                /**
+                 * Stop the observer to reduce resource use on this page. If any
+                 * code blocks are added later the user will need to manually
+                 * call the `highlight` or `highlightAll` methods.
+                 */
+                observer.disconnect();
+                /**
+                 * Body element has been added to the DOM so search it and process
+                 * all the code blocks found inside it.
+                 */
+                this.#processBlocks();
+                return; // Kill the loop so we don't trigger another reprocessing!
+            }
+        });
+        // Start the observer.
+        bodyObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
+    /**
      * The fastest way to get the actual type of anything in JavaScript.
      *
      * {@link https://jsbench.me/ruks9jljcu/2 | See benchmarks}.
@@ -431,7 +506,8 @@ class HighlightLite {
 
 }
 
+// Primary instance of HLJSL that auto precesses the page.
 window.hljsl = new HighlightLite();
 
-// TODO: Rollup will create an iife and we want only some methods to be publicly accessible.
+// Rollup will create an iife adding HighlightLite globally to the window as HLJSL.
 export default HighlightLite;
