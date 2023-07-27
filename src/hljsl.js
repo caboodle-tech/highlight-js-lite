@@ -121,33 +121,76 @@ class HighlightLite {
      * @param {HTMLElement} elem The code element to process.
      */
     async #correctPadding(elem) {
-        // Don't waste time reprocessing a block.
-        if (elem.classList.contains('fixed-padding')) { return; }
-        // We must ignore any empty lines until actual code is encountered.
-        let indentation = 0;
-        let doIndentation = true;
-        // Break the code into their lines for processing.
-        const lines = elem.innerText.split('\n');
-        // Process each line.
-        lines.forEach((line, i) => {
-            // If we still haven't figured out indentation keep checking.
-            if (indentation === 0 && doIndentation) {
-                if (line.length !== 0) {
-                    /**
-                     * This line has code which indicates the unnecessary indentation
-                     * that HLJSL removes to left align the code perfectly.
-                     */
-                    const match = line.match(/^\s+/);
-                    indentation = match ? match[0].length : 0;
-                    doIndentation = false;
-                }
+        // Enforce proper <pre><code> structure.
+        let pre;
+        let code;
+        if (elem.nodeName === 'PRE') {
+            // Correct pre element.
+            pre = elem;
+            code = elem.querySelector('code');
+            if (!code) {
+                // Incorrect code element.
+                code = document.createElement('CODE');
+                code.innerText = pre.innerText;
+                pre.innerHTML = '';
+                pre.appendChild(code);
             }
-            // Remove the unnecessary indentation (padding) at the start of each line.
+        } else if (elem.nodeName === 'CODE') {
+            // Correct code element.
+            pre = elem.closest('pre');
+            code = elem;
+            if (!pre) {
+                // Incorrect pre element.
+                pre = document.createElement('PRE');
+                code.parentElement.insertBefore(pre, elem);
+                pre.appendChild(code);
+            }
+        } else {
+            // Pre and code missing entirely.
+            pre = document.createElement('PRE');
+            code = document.createElement('CODE');
+            code.innerText = elem.innerHTML;
+            pre.appendChild(code);
+            elem.parentElement.insertBefore(pre, elem);
+            elem.parentElement.removeChild(elem);
+        }
+        // Don't waste time reprocessing a block.
+        if (code.classList.contains('fixed-padding')) { return; }
+        // Break the code into their lines for processing.
+        const lines = code.innerText.split('\n');
+        /**
+         * Remove empty lines from the start and end of the code. We cannot
+         * use trim because it will wipe the indentation we are trying to find.
+         */
+        let startIndex = 0;
+        let endIndex = lines.length - 1;
+        // Find the index of the first non-empty line from the start.
+        while (startIndex < lines.length && lines[startIndex].trim() === '') {
+            startIndex += 1;
+        }
+        // Find the index of the first non-empty line from the end.
+        while (endIndex >= 0 && lines[endIndex].trim() === '') {
+            endIndex -= 1;
+        }
+        // Calculate the number of empty lines to remove from the start and end.
+        const numEmptyLinesAtStart = startIndex;
+        const numEmptyLinesAtEnd = lines.length - 1 - endIndex;
+        // Remove the empty lines from the start and end of the array.
+        lines.splice(0, numEmptyLinesAtStart);
+        lines.splice(lines.length - numEmptyLinesAtEnd, numEmptyLinesAtEnd);
+        // Just in case we were given a bad code block save it from erroring out here.
+        if (lines.length === 0) { lines.push(''); }
+        // Count the spaces from the first line, this indicates the indentation we need to remove.
+        const match = lines[0].match(/^\s+/);
+        const indentation = match ? match[0].length : 0;
+        // Remove the unnecessary indentation (padding) at the start of each line.
+        lines.forEach((line, i) => {
             lines[i] = line.substring(indentation);
         });
         // Make the replacement in the DOM and remove any extra empty new line at the end.
-        elem.innerText = lines.join('\n').trimEnd();
-        elem.classList.add('fixed-padding');
+        code.innerText = lines.join('\n').trim();
+        code.classList.add('fixed-padding');
+        pre.innerHTML = pre.innerHTML.trim();
     }
 
     /**
