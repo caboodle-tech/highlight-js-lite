@@ -20,13 +20,13 @@ The precompiled version of HLJSL uses the light and dark StackOverflow theme. If
 
 ## Configure
 
-HLJSL is designed to require zero configuration but there are a few settings you can change using [query strings](https://en.wikipedia.org/wiki/Query_string) at the end of the HLJSL's src url:
+HLJSL is designed to require zero configuration but there two ways to modify the default settings for HLJSL. Using [query strings](https://en.wikipedia.org/wiki/Query_string) at the end of the HLJSL's src url will allow you to modify some of the core settings but not all of them:
 
 - **autoLoad=false** will disable auto loading (auto processing) of code blocks.
 - **lazyLoad=false** will disable lazy loading (lazy processing) of code blocks.
 - **hideNumbers=true** will disable showing the line numbers on processed blocks.
 
-If you wanted full control of when HLJSL processes code blocks you would add code similar to the following in your head tag:
+For example if you wanted full control of when HLJSL processes code blocks you would add code similar to the following in your head tag:
 
 ```html
 <script src="./hljsl.min.js?autoLoad=false&lazyLoad=false"></script>
@@ -53,6 +53,21 @@ You can also use the css classes `hide-numbers` and `show-numbers` to overwrite 
     <code>
 </pre>
 ```
+
+A more advanced way that allows complete control over all of HLJSL's settings is to set a global configuration object **before** the `<script>` tag that loads HLJSL:
+
+```javascript
+window.hljslConfig = {
+    autoLoad: true,             // Auto process all pre code blocks
+    hideNumbers: false,         // Hide the line numbers for code blocks
+    ignoreElements: [],         // Tags, .classes, and/or #ids not to look within
+    lang: 'en-us',              // Language help messages should display in
+    lazyLoad: true,             // Process code blocks only when they may come into view
+    onlyAutoProcess: ['body']   // Tags, .classes, and/or #ids of elements to look within
+}
+```
+
+You may include or exclude any combination of these options. Any missing options from the global configuration object will use HLJSL's default for that option.
 
 ## Compile With a Different Theme
 

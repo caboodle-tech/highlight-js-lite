@@ -32,7 +32,7 @@ class Builder {
         const outputObj = {
             file: Path.join(__dirname, '../dist/hljsl.min.js'),
             format: 'iife',
-            name: 'hljsl',
+            name: 'HLJSL',
             plugins: [Terser()],
             sourcemap: true
         };
