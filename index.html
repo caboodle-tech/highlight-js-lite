@@ -147,7 +147,7 @@
             </p>
             <div class="header">Configure</div>
             <p>
-                HLJSL is designed to require zero configuration but there are a few settings you can change using <a href="https://en.wikipedia.org/wiki/Query_string" target="_blank">query strings</a> at the end of the HLJSL's src url:
+                HLJSL is designed to require zero configuration but there two ways to modify the default settings for HLJSL. Using <a href="https://en.wikipedia.org/wiki/Query_string" target="_blank">query strings</a> at the end of the HLJSL's src url will allow you to modify some of the core settings but not all of them:
             </p>
             <ul>
                 <li>
@@ -161,7 +161,7 @@
                 </li>
             </ul>
             <p>
-                If you wanted full control of when HLJSL processes code blocks you would add code similar to the following in your head tag:
+                For example if you wanted full control of when HLJSL processes code blocks you would add code similar to the following in your head tag:
             </p>
             <pre class="hljsl hide-numbers">
                 <code>
@@ -192,6 +192,26 @@
                     &lt;/pre&gt;
                 </code>
             </pre>
+            <p>
+                A more advanced way that allows complete control over all of HLJSL's settings is to set a global configuration object <strong>before</strong> the <code>&lt;script&gt;</code> tag that loads HLJSL:
+            </p>
+            <pre class="hide-numbers">
+                <code>
+                    &lt;script&gt;
+                        window.hljslConfig = {
+                            autoLoad: true,             // Auto process all pre code blocks
+                            hideNumbers: false,         // Hide the line numbers for code blocks
+                            ignoreElements: [],         // Tags, .classes, and/or #ids not to look within
+                            lang: 'en-us',              // Language help messages should display in
+                            lazyLoad: true,             // Process code blocks only when they may come into view
+                            onlyAutoProcess: ['body']   // Tags, .classes, and/or #ids of elements to look within
+                        }
+                    &lt;/script&gt;
+                </code>
+            </pre>
+            <p>
+                You may include or exclude any combination of these options. Any missing options from the global configuration object will use HLJSL's default for that option.
+            </p>
             <div class="header">Examples</div>
             <p>
                 If you believe in the adage <i>a picture is worth more than a thousand words</i> then the examples below are for you! These examples were copied from <a href="https://wcoder.github.io/highlightjs-line-numbers.js/" target="_blank">highlightjs line numbers</a> and is an entirely different project with no connection to HLJSL or Caboodle Tech. If you are looking to just add line numbers to your existing installation of highlight.js you probably want that project instead.
@@ -205,18 +225,18 @@
                     #Если Клиент Тогда
                     Перем СимвольныйКодКаталога = "ля-ля-ля"; //комментарий
                     Функция Сообщить(Знач ТекстСообщения, ТекстСообщения2) Экспорт //комментарий к функции
-                        x=ТекстСообщения+ТекстСообщения2+"
-                        |строка1
-                        |строка2
-                        |строка3";
+                    x=ТекстСообщения+ТекстСообщения2+"
+                    |строка1
+                    |строка2
+                    |строка3";
                     КонецФункции
                     #КонецЕсли
                     
                     // Процедура ПриНачалеРаботыСистемы
                     //
                     Процедура ПриНачалеРаботыСистемы()
-                        Обработки.Помощник.ПолучитьФорму("Форма").Открыть();
-                        d = '21.01.2008'
+                    Обработки.Помощник.ПолучитьФорму("Форма").Открыть();
+                    d = '21.01.2008'
                     КонецПроцедуры
                 </code>
             </pre>
