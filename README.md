@@ -4,7 +4,7 @@ HLJSL is a simple wrapper for the [highlight.js](https://github.com/highlightjs/
 
 - Automatic code highlighting for `<pre><code>` blocks using WebWorkers for performance.
 - Automatic line numbers for `<pre><code>` blocks which can be disabled according to preference.
-- Automatic pre padding (left-padding) correction allowing you to indent `<pre><code>` blocks just like any other code in your source files; view this pages source for examples.
+- Automatic `pre` padding (left-padding) correction allowing you to indent `<pre><code>` blocks just like any other code in your source files; view this pages source for examples.
 - Copy code to clipboard button with built-in language (i18n) support.
 - Light and dark theme support with the ability to easily build your own theme.
 
@@ -17,6 +17,8 @@ HLJS comes precompiled and can be added to your site by downloading the [latest 
 3.  Make sure to place all the code you want to be auto highlighted inside `<pre><code>` blocks. Enjoy!
 
 The precompiled version of HLJSL uses the light and dark StackOverflow theme. If you would like to compile HLJSL with a different theme the process is fairly simple and is covered in the [Compile With a Different Theme](#compile-with-a-different-theme) section below.
+
+For greater control over HLJSL there are configuration options you can modify covered in the next section. See the [public methods](#public-methods) section if you would like to use HLJSL manually or in conjunction with your own application.
 
 ## Configure
 
@@ -99,6 +101,58 @@ npm run build:zip # Bundle all currently compiled files into a zip
 
 # All files created by a build command will be output to the `dist` directory
 ```
+
+## Public Methods
+
+The primary instance of HLJSL added globally to the page as `hljsl` has the following publicly available methods. You can also create a new instance of HLJSL and provide it with a [configuration object](#configure) that modifies the new instances settings.
+
+#### **connect**
+
+- Connect to HLJSL's web worker. This is automatically done but you can trigger it earlier if you like.
+
+#### **copyToClipboard** (private)
+
+- This is public because of scoping needs but it should not be used.
+
+#### **disconnect**
+
+- Disconnect from HLJSL's web worker.
+
+#### **getAutoRunStatus**
+
+- Check the status of the page being auto loaded (processed). Prevents instances of HLJSL from stepping on one another.
+
+#### **getQuerySelectorFindAllString(find)**
+
+- An array of element tags, .classes, and/or #ids to locate in the page. Returns a string that can be used by querySelectorAll to find only the specified elements in the page.
+
+#### **getQuerySelectorNotWithinString(find, notWithin)**
+
+- Builds a query string to be used by querySelectorAll that allows not searching within .classes, #ids, and/or elements. `find` should be the query string for the element to find and `notWithin` should be an array of .classes, #ids, and/or elements to not search within.
+
+#### **getUserLanguage**
+
+- Detect what language the user is viewing the page in. If you want to set a language you should add the `lang` attribute to the HTML tag before HLJSL runs.
+
+#### **getVersion**
+
+- The version of HLJSL being used.
+
+#### **highlight(codeElem)**
+
+- Highlight a code element with HLJS using the HLJSL web worker.
+
+#### **highlightAll(container)**
+
+- Process all code blocks found within the provided container (element).
+
+#### **isConnected**
+
+- Check if HLJSL's Web worker is connected.
+
+#### **setConfig(config)**
+
+- Allows changing the default settings being used by this instance of HLJSL.
 
 ## Contributions
 

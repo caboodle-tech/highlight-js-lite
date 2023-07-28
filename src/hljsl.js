@@ -120,7 +120,12 @@ class HighlightLite {
      *
      * @param {HTMLElement} elem The code element to process.
      */
-    async #correctPadding(elem) {
+    #correctPadding(elem) {
+        // Don't waste time reprocessing a block.
+        if (elem.classList.contains('fixed-padding')
+            || elem.parentElement.classList.contains('fixed-padding')
+            || elem.querySelector('fixed-padding')
+        ) { return elem; }
         // Enforce proper <pre><code> structure.
         let pre;
         let code;
@@ -154,8 +159,6 @@ class HighlightLite {
             elem.parentElement.insertBefore(pre, elem);
             elem.parentElement.removeChild(elem);
         }
-        // Don't waste time reprocessing a block.
-        if (code.classList.contains('fixed-padding')) { return; }
         // Break the code into their lines for processing.
         const lines = code.innerText.split('\n');
         /**
@@ -187,10 +190,13 @@ class HighlightLite {
         lines.forEach((line, i) => {
             lines[i] = line.substring(indentation);
         });
+        // Mark the pre tag as highlight.js
+        pre.classList.add('hljs');
         // Make the replacement in the DOM and remove any extra empty new line at the end.
         code.innerText = lines.join('\n').trim();
         code.classList.add('fixed-padding');
-        pre.innerHTML = pre.innerHTML.trim();
+        pre.innerHTML = pre.innerHTML.trim(); // This breaks the users DOM reference!
+        return pre.firstElementChild; // Must return the new code element.
     }
 
     /**
@@ -213,6 +219,21 @@ class HighlightLite {
      */
     getAutoRunStatus() {
         return autoRunCompleted;
+    }
+
+    /**
+     * Helper method to return the true innerText in a more reliant and performant way. According to
+     * the standards, if an element or its text is hidden by CSS then no newlines are added to the
+     * result of innerText. Any call to innerText also triggers a redraw since the elements style
+     * has to be taken into account. Here we work around these issues (cheat) by using innerHTML and
+     * replacing the <br> (line break) tags with newlines.
+     *
+     * @param {HTMLElement} elem The element to get the true innerText from.
+     *
+     * @returns {string} The innerText always including newlines.
+     */
+    #getTrueInnerText(elem) {
+        return elem.innerHTML.replace(/<br\s*\/?>/gi, '\n');
     }
 
     /**
@@ -279,7 +300,7 @@ class HighlightLite {
      *
      * @param {HTMLElement} elem The code element to highlight.
      */
-    async highlight(elem) {
+    highlight(elem) {
         // If the web worker is not connected do so now.
         if (!this.isConnected()) {
             /**
@@ -297,7 +318,7 @@ class HighlightLite {
         if (this.#hideNumbers) {
             elem.parentElement.classList.add('hide-numbers');
         }
-        await this.#correctPadding(elem);
+        elem = this.#correctPadding(elem);
         /**
          * This should have been added already but a deferred code block that the
          * user wants to manually process will be missing this.
@@ -306,7 +327,7 @@ class HighlightLite {
         // eslint-disable-next-line no-param-reassign
         elem.dataset.hljslId = this.createId();
         const msg = {
-            code: elem.innerText,
+            code: this.#getTrueInnerText(elem),
             codeLang: elem.classList.toString(),
             id: elem.dataset.hljslId,
             pageLang: this.#lang,
@@ -317,14 +338,28 @@ class HighlightLite {
     }
 
     /**
-     * Process all code blocks found within the provided container (element).
+     * Process all code blocks found within the provided container (element) or leave empty and the
+     * user/global settings will be used to find blocks to process.
      *
-     * @param {HTMLElement} container The code element to highlight.
+     * @param {HTMLElement} container The element to search for code blocks within to highlight.
      */
     highlightAll(container) {
         // eslint-disable-next-line no-param-reassign
-        if (!container) { container = document; }
-        // Find all the code blocks in this element.
+        if (!container) {
+            // No container was provided so process according to the users/global settings.
+            const selector = this.getQuerySelectorNotWithinString('pre code', this.#ignoreElements);
+            const autoProcess = this.getQuerySelectorFindAllString(this.#onlyAutoProcess);
+            const elems = document.querySelectorAll(autoProcess);
+            elems.forEach((elem) => {
+                const blocks = elem.querySelectorAll(selector);
+                blocks.forEach((block) => {
+                    // Process each code block found.
+                    this.highlight(block);
+                });
+            });
+            return;
+        }
+        // Find all the code blocks in the provided element.
         const codeBlocks = container.querySelectorAll('pre code');
         codeBlocks.forEach((block) => {
             // Process each code block found.
@@ -397,6 +432,26 @@ class HighlightLite {
         }
     }
 
+    #processBlock(block) {
+        // Process blocks now or lazy load them?
+        if (!this.#lazyLoad) {
+            // Process blocks now.
+            this.highlight(block);
+            return;
+        }
+        // Lazy load blocks instead; recommended for pages with many code blocks.
+        const blockObserverOptions = {
+            root: null,
+            rootMargin: '100%',
+            threshold: 0
+        };
+        const blockObserver = new IntersectionObserver(
+            this.#blockInView.bind(this),
+            blockObserverOptions
+        );
+        blockObserver.observe(block);
+    }
+
     /**
      * Automatically process code blocks according to the default or global settings.
      */
@@ -409,33 +464,16 @@ class HighlightLite {
             }
             this.#correctPadding(block);
         });
-        // Now process the page according to the users settings.
+        // Now process the page according to the users/global settings.
         const selector = this.getQuerySelectorNotWithinString('pre code', this.#ignoreElements);
         const autoProcess = this.getQuerySelectorFindAllString(this.#onlyAutoProcess);
         const elems = document.querySelectorAll(autoProcess);
         elems.forEach((elem) => {
             const blocks = elem.querySelectorAll(selector);
-            blocks.forEach(async (block) => {
-                block.parentElement.classList.add('hljs');
+            blocks.forEach((block) => {
                 // Stop processing if autoLoad is false; we only fix the padding and spacing.
                 if (!this.#autoLoad) { return; }
-                // Process blocks now or lazy load them?
-                if (!this.#lazyLoad) {
-                    // Process blocks now.
-                    this.highlight(block);
-                    return;
-                }
-                // Lazy load blocks instead; recommended for pages with many code blocks.
-                const blockObserverOptions = {
-                    root: null,
-                    rootMargin: '100%',
-                    threshold: 0
-                };
-                const blockObserver = new IntersectionObserver(
-                    this.#blockInView.bind(this),
-                    blockObserverOptions
-                );
-                blockObserver.observe(block);
+                this.#processBlock(block);
             });
         });
     }
