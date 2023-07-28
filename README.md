@@ -156,4 +156,4 @@ The primary instance of HLJSL added globally to the page as `hljsl` has the foll
 
 ## Contributions
 
-HLJSL is an open source (Commons Clausee: MIT) community supported project, if you would like to help please consider <a href="https://github.com/caboodle-tech/highlight-js-lite/issues" target="_blank">tackling an issue</a> or <a href="https://ko-fi.com/caboodletech" target="_blank">making a donation</a> to keep the project alive.
+HLJSL is an open source (Commons Clause: MIT) community supported project, if you would like to help please consider <a href="https://github.com/caboodle-tech/highlight-js-lite/issues" target="_blank">tackling an issue</a> or <a href="https://ko-fi.com/caboodletech" target="_blank">making a donation</a> to keep the project alive.
