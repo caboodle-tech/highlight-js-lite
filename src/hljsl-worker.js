@@ -1,6 +1,36 @@
 /* eslint-disable no-restricted-globals */
+
+// Polyfill Array.some
+if (!Array.prototype.some) {
+    // eslint-disable-next-line no-extend-native
+    Array.prototype.some = (callback, thisArg) => {
+        if (this == null) {
+            throw new TypeError('Array.prototype.some called on null or undefined');
+        }
+
+        if (typeof callback !== 'function') {
+            throw new TypeError(`${callback} is not a function`);
+        }
+
+        const array = Object(this);
+        // eslint-disable-next-line no-bitwise
+        const length = array.length >>> 0;
+
+        for (let i = 0; i < length; i++) {
+            if (i in array && callback.call(thisArg, array[i], i, array)) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+}
+
 // eslint-disable-next-line max-len
-const validCodeLanguages = ['1c', 'abnf', 'accesslog', 'actionscript', 'ada', 'angelscript', 'apache', 'applescript', 'arcade', 'arduino', 'armasm', 'asciidoc', 'aspectj', 'autohotkey', 'autoit', 'avrasm', 'awk', 'axapta', 'bash', 'basic', 'bnf', 'brainfuck', 'c', 'cal', 'capnproto', 'ceylon', 'clean', 'clojure-repl', 'clojure', 'cmake', 'coffeescript', 'coq', 'cos', 'cpp', 'crmsh', 'crystal', 'csharp', 'csp', 'css', 'd', 'dart', 'delphi', 'diff', 'django', 'dns', 'dockerfile', 'dos', 'dsconfig', 'dts', 'dust', 'ebnf', 'elixir', 'elm', 'erb', 'erlang-repl', 'erlang', 'excel', 'fix', 'flix', 'fortran', 'fsharp', 'gams', 'gauss', 'gcode', 'gherkin', 'glsl', 'gml', 'go', 'golo', 'gradle', 'graphql', 'groovy', 'haml', 'handlebars', 'haskell', 'haxe', 'hsp', 'http', 'hy', 'inform7', 'ini', 'irpf90', 'isbl', 'java', 'javascript', 'js', 'jboss-cli', 'json', 'julia-repl', 'julia', 'kotlin', 'lasso', 'latex', 'ldif', 'leaf', 'less', 'lisp', 'livecodeserver', 'livescript', 'llvm', 'lsl', 'lua', 'makefile', 'markdown', 'mathematica', 'matlab', 'maxima', 'mel', 'mercury', 'mipsasm', 'mizar', 'mojolicious', 'monkey', 'moonscript', 'n1ql', 'nestedtext', 'nginx', 'nim', 'nix', 'node-repl', 'nsis', 'objectivec', 'ocaml', 'openscad', 'oxygene', 'parser3', 'perl', 'pf', 'pgsql', 'php-template', 'php', 'plaintext', 'pony', 'powershell', 'processing', 'profile', 'prolog', 'properties', 'protobuf', 'puppet', 'purebasic', 'python-repl', 'python', 'q', 'qml', 'r', 'reasonml', 'rib', 'roboconf', 'routeros', 'rsl', 'ruby', 'ruleslanguage', 'rust', 'sas', 'scala', 'scheme', 'scilab', 'scss', 'shell', 'smali', 'smalltalk', 'sml', 'sqf', 'sql', 'stan', 'stata', 'step21', 'stylus', 'subunit', 'swift', 'taggerscript', 'tap', 'tcl', 'thrift', 'tp', 'twig', 'typescript', 'ts', 'vala', 'vbnet', 'vbscript-html', 'vbscript', 'verilog', 'vhdl', 'vim', 'wasm', 'wren', 'x86asm', 'xl', 'xml', 'xquery', 'yaml', 'zephir'];
+const commonEntities = ['&lt;', '&gt;', '&amp;', '&quot;', '&apos;', '&nbsp;', '&copy;', '&reg;', '&trade;', '&mdash;', '&ndash;', '&deg;', '&euro;', '&pound;', '&yen;', '&cent;', '&micro;', '&sect;', '&para;', '&hellip;', '&times;', '&divide;', '&plusmn;', '&frac12;', '&frac14;', '&frac34;', '&br;', '&em;', '&strong;', '&sub;', '&sup;'];
+
+// eslint-disable-next-line max-len
+const validCodeLanguages = ['1c', 'abnf', 'accesslog', 'actionscript', 'ada', 'angelscript', 'apache', 'applescript', 'arcade', 'arduino', 'armasm', 'asciidoc', 'aspectj', 'autohotkey', 'autoit', 'avrasm', 'awk', 'axapta', 'bash', 'basic', 'bnf', 'brainfuck', 'c', 'cal', 'capnproto', 'ceylon', 'clean', 'clojure-repl', 'clojure', 'cmake', 'coffeescript', 'coq', 'cos', 'cpp', 'crmsh', 'crystal', 'csharp', 'csp', 'css', 'd', 'dart', 'delphi', 'diff', 'django', 'dns', 'dockerfile', 'dos', 'dsconfig', 'dts', 'dust', 'ebnf', 'elixir', 'elm', 'erb', 'erlang-repl', 'erlang', 'excel', 'fix', 'flix', 'fortran', 'fsharp', 'gams', 'gauss', 'gcode', 'gherkin', 'glsl', 'gml', 'go', 'golo', 'gradle', 'graphql', 'groovy', 'haml', 'handlebars', 'haskell', 'haxe', 'hsp', 'http', 'hy', 'html', 'inform7', 'ini', 'irpf90', 'isbl', 'java', 'javascript', 'js', 'jboss-cli', 'json', 'julia-repl', 'julia', 'kotlin', 'lasso', 'latex', 'ldif', 'leaf', 'less', 'lisp', 'livecodeserver', 'livescript', 'llvm', 'lsl', 'lua', 'makefile', 'markdown', 'mathematica', 'matlab', 'maxima', 'mel', 'mercury', 'mipsasm', 'mizar', 'mojolicious', 'monkey', 'moonscript', 'n1ql', 'nestedtext', 'nginx', 'nim', 'nix', 'node-repl', 'nsis', 'objectivec', 'ocaml', 'openscad', 'oxygene', 'parser3', 'perl', 'pf', 'pgsql', 'php-template', 'php', 'plaintext', 'pony', 'powershell', 'processing', 'profile', 'prolog', 'properties', 'protobuf', 'puppet', 'purebasic', 'python-repl', 'python', 'q', 'qml', 'r', 'reasonml', 'rib', 'roboconf', 'routeros', 'rsl', 'ruby', 'ruleslanguage', 'rust', 'sas', 'scala', 'scheme', 'scilab', 'scss', 'shell', 'smali', 'smalltalk', 'sml', 'sqf', 'sql', 'stan', 'stata', 'step21', 'stylus', 'subunit', 'swift', 'taggerscript', 'tap', 'tcl', 'thrift', 'tp', 'twig', 'typescript', 'ts', 'vala', 'vbnet', 'vbscript-html', 'vbscript', 'verilog', 'vhdl', 'vim', 'wasm', 'wren', 'x86asm', 'xl', 'xml', 'xquery', 'yaml', 'zephir'];
 
 const copyToClipboardMap = {
     af: 'Kopieer kode na knipbord',
@@ -111,7 +141,89 @@ onmessage = (evt) => {
     let codeLang = msg.codeLang.split(' ');
     codeLang = codeLang.filter((value) => validCodeLanguages.includes(value));
 
+    // Try to default to HTML mode since that is a common language to get messed up.
+    if (codeLang.length === 0) {
+        if (commonEntities.some((entity) => code.includes(entity))) {
+            codeLang = ['html'];
+        }
+    }
+
     importScripts(`${root}/highlight.min.js`);
+
+    // Define the HTML language definition.
+    self.hljs.registerLanguage('html', () => ({
+        case_insensitive: true,
+        keywords: {
+            $pattern: /[a-z0-9]+/i,
+            // eslint-disable-next-line max-len
+            keyword: ['abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'base', 'basefont', 'bgsound', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'dd', 'del', 'details', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figure', 'font', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'iframe', 'image', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'link', 'list-item', 'map', 'marquee', 'menu', 'meta', 'meter', 'nav', 'ol', 'output', 'optgroup', 'option', 'p', 'param', 'pre', 'progress', 'q', 'ruby', 'rp', 'rt', 's', 'samp', 'script', 'section', 'select', 'small', 'span', 'strong', 'style', 'sub', 'sup', 'table', 'tbody', 'td', 'textarea', 'tfoot', 'thead', 'title', 'tr', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
+        },
+        contains: [
+            {
+                // Tags.
+                className: 'tag',
+                begin: /<\/?[a-z]+((?:\s+.*?)?)>/i,
+                relevance: 10,
+                contains: [
+                    {
+                        // Attributes.
+                        className: 'attribute',
+                        begin: /[a-z]+\s*=\s*['"]?(.*?)['"]?/i,
+                        relevance: 5
+                    }
+                ]
+            },
+            {
+                // JavaScript inside <script> tags.
+                className: 'javascript',
+                begin: /<script.*?>/,
+                end: /<\/script>/,
+                relevance: 8,
+                subLanguage: 'javascript',
+                excludeBegin: true,
+                excludeEnd: true,
+                contains: [
+                    {
+                        // Multi-line comments /* ... */
+                        className: 'comment',
+                        begin: /\/\*/,
+                        end: /\*\//,
+                        contains: [
+                            {
+                                // Symbols inside comments.
+                                className: 'symbol',
+                                begin: /&[a-z]+;/
+                            }
+                        ]
+                    },
+                    {
+                        // Single-line comments // ...
+                        className: 'comment',
+                        begin: /\/\/.*$/
+                    }
+                ]
+            },
+            {
+                // Comments.
+                className: 'comment',
+                begin: /<!--(?!>)|&[a-z]+;!--/,
+                end: /.*?-->|.*?--&[a-z]+;/,
+                relevance: 5,
+                contains: [
+                    {
+                        // Symbols inside comments.
+                        className: 'symbol',
+                        begin: /&[a-z]+;|<|>/i
+                    }
+                ]
+            },
+            {
+                // Symbols.
+                className: 'symbol',
+                begin: /&[a-z]+;|<|>/i
+            }
+        ]
+    }));
 
     let result = '';
 
@@ -119,6 +231,11 @@ onmessage = (evt) => {
         result = self.hljs.highlightAuto(code);
     } else {
         result = self.hljs.highlightAuto(code, codeLang);
+    }
+
+    // HLJS encodes & to &amp; undo this because it breaks HTML entities.
+    if (result.value) {
+        result.value = result.value.replace(/&amp;/g, '&');
     }
 
     const reply = {
