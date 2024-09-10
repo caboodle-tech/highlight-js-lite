@@ -33,7 +33,6 @@ jobs:
       - name: Build 🔧
         run: |
           pnpm install
-          node --version  # Check Node.js version
           node ./bin/build.js
 
       - name: Deploy 🚀

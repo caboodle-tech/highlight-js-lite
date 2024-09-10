@@ -112,7 +112,7 @@
     font-weight: bold;
 }
 
-pre.hljs, .hljs pre {
+pre.hljsl, .hljsl pre, .hljs pre {
     white-space: pre-wrap;
     white-space: -moz-pre-wrap;
     white-space: -pre-wrap;
@@ -138,7 +138,7 @@ pre.hljs, .hljs pre {
         opacity: 0;
 
         svg {
-            fill: var(--highlight-btn-border);
+            fill: var(--highlight-btn-fill);
         }
     }
 
@@ -173,6 +173,7 @@ pre.hljs, .hljs pre {
         td:last-child {
             padding: 0 1em;
             width: 100%;
+            background: var(--highlight-bg);
         }
 
         &:first-of-type {
@@ -203,6 +204,7 @@ pre.hljs, .hljs pre {
     }
 
     &.copy-to-clipboard {
+        // Apply highlighting effect only to the code side of the table.
         tr {
             td:last-child {
                 background-color: var(--highlight-copy-bg);

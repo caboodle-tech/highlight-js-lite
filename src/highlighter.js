@@ -146,7 +146,7 @@ class Highlighter {
             elem.parentElement.classList.contains('fixed-padding') ||
             elem.querySelector('fixed-padding')
         ) { return elem; }
-        // Enforce proper <pre><code> structure.
+        // Enforce proper <pre><code> structure; only useful when the user hands us an element to process.
         let pre;
         let code;
         if (elem.nodeName === 'PRE') {
@@ -210,6 +210,8 @@ class Highlighter {
         lines.forEach((line, i) => {
             lines[i] = line.substring(indentation);
         });
+        // Mark the pre tag as HLJSL.
+        pre.classList.add('hljsl');
         // Mark the code tag as highlight.js like normal.
         code.classList.add('hljs');
         // Make the replacement in the DOM and remove any extra empty new line at the end.
