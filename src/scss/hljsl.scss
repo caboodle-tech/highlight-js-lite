@@ -1,67 +1,81 @@
-@use 'theme/stackoverflow.scss' as Theme;
+@use 'theme/caboodle-tech.scss' as Theme;
 
 @include Theme.styles();
 
 .hljs {
-	color: var(--highlight-color);
-	background: var(--highlight-bg);
+    color: var(--highlight-color);
+    background: var(--highlight-bg);
+}
+
+.hljs-text {
+    color: var(--highlight-color);
 }
 
 .hljs-subst {
-	color: var(--highlight-color);
-}
-
-.hljs-comment {
-	color: var(--highlight-comment);
+    color: var(--highlight-color);
 }
 
 .hljs-keyword,
-.hljs-selector-tag,
-.hljs-meta .hljs-keyword,
-.hljs-punctuation,
-.hljs-operator,
-.hljs-doctag,
-.hljs-section,
-.diff .hljs-meta {
-	color: var(--highlight-keyword);
+.hljs-meta .hljs-keyword {
+    color: var(--highlight-keyword);
+}
+
+.hljs-selector-tag {
+    color: var(--highlight-tag);
+}
+
+
+.hljs-operator {
+    color: var(--highlight-operator);
 }
 
 .hljs-variable.constant_,
 .hljs-attr {
-	color: var(--highlight-attribute);
+    color: var(--highlight-attribute);
 }
 
-.hljs-attribute {
-	color: var(--highlight-symbol);
+.hljs-meta,
+.diff .hljs-meta {
+    color: var(--highlight-meta);
+}
+
+.hljs-section {
+    color: var(--highlight-section);
+}
+
+.hljs-doctag {
+    color: var(--highlight-doctag);
+}
+
+.hljs-number {
+    color: var(--highlight-number);
+}
+
+.hljs-attribute,
+.hljs-symbol {
+    color: var(--highlight-symbol);
 }
 
 .hljs-name,
 .hljs-type,
-.hljs-number,
 .hljs-selector-id,
 .hljs-quote,
 .hljs-tag,
 .hljs-template-tag {
-	color: var(--highlight-namespace);
+    color: var(--highlight-namespace);
 }
 
 .hljs-selector-class {
-	color: var(--highlight-keyword);
+    color: var(--highlight-symbol);
 }
 
 .hljs-string,
 .hljs-regexp,
-.hljs-symbol,
 .hljs-variable,
 .hljs-template-variable,
 .hljs-link,
 .hljs-selector-attr {
-	color: var(--highlight-variable);
-}
-
-.hljs-meta,
-.hljs-selector-pseudo {
-	color: var(--highlight-keyword);
+    color: var(--highlight-variable);
 }
 
 .hljs-built_in,
@@ -70,32 +84,32 @@
 .hljs-title.class_.inherited__,
 .hljs-title,
 .hljs-literal {
-	color: var(--highlight-literal);
+    color: var(--highlight-literal);
 }
 
 .hljs-bullet,
 .hljs-code {
-	color: var(--highlight-punctuation);
+    color: var(--highlight-punctuation);
 }
 
 .hljs-meta .hljs-string {
-	color: var(--highlight-variable);
+    color: var(--highlight-variable);
 }
 
 .hljs-deletion {
-	color: var(--highlight-deletion);
+    color: var(--highlight-deletion);
 }
 
 .hljs-addition {
-	color: var(--highlight-addition);
+    color: var(--highlight-addition);
 }
 
 .hljs-emphasis {
-	font-style: italic;
+    font-style: italic;
 }
 
 .hljs-strong {
-	font-weight: bold;
+    font-weight: bold;
 }
 
 pre.hljs, .hljs pre {

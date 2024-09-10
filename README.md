@@ -2,21 +2,17 @@
 
 HLJSL is a simple wrapper for the [highlight.js](https://github.com/highlightjs/highlight.js) library and is designed to be a drop-in solution with minimal or no configuration required. Out of the box HLJSL provides:
 
-- Automatic code highlighting for `<pre><code>` blocks using WebWorkers for performance.
+- Automatic code highlighting for `<pre><code>` blocks using a Web Worker for performance.
 - Automatic line numbers for `<pre><code>` blocks which can be disabled according to preference.
-- Automatic `pre` padding (left-padding) correction allowing you to indent `<pre><code>` blocks just like any other code in your source files; view this pages source for examples.
+- Automatic `pre` padding (left-padding) correction allowing you to indent `<pre><code>` blocks just like any other code in your source files; view the source of the [demo page](https://caboodle-tech.github.io/highlight-js-lite/) for examples.
 - Copy code to clipboard button with built-in language (i18n) support.
 - Light and dark theme support with the ability to easily build your own theme.
 
 ## Usage
 
-HLJS comes precompiled and can be added to your site by downloading the [latest release](https://github.com/caboodle-tech/highlight-js-lite/releases) and following these steps:
+HLJS comes precompiled and can be added to your site by including the appropriate files from the `dist` folder to your site: Include the `hljsl.min.css` and `hljsl.min.js` files in the `<head>` of your pages. Do not add the `hljs.min.js` file (notice the lack of `l` after `hljs`) this will be loaded by the Web Worker when needed.
 
-1.  Extract (unzip) the files and place them into a directory within your project. Do not split up the files, they must stay together in the same directory.
-2.  In the `<head>` of your sites pages add a `<script>` tag to load the `hljsl.min.js` file and then a `<link>` tag to load the `hljsl.min.css` file.
-3.  Make sure to place all the code you want to be auto highlighted inside `<pre><code>` blocks. Enjoy!
-
-The precompiled version of HLJSL uses the light and dark StackOverflow theme. If you would like to compile HLJSL with a different theme the process is fairly simple and is covered in the [Compile With a Different Theme](#compile-with-a-different-theme) section below.
+The precompiled version of HLJSL uses a modified version of the light and dark StackOverflow theme. If you would like to compile HLJSL with a different theme the process is fairly simple and is covered in the [Compile With a Different Theme](#compile-with-a-different-theme) section below.
 
 For greater control over HLJSL there are configuration options you can modify covered in the next section. See the [public methods](#public-methods) section if you would like to use HLJSL manually or in conjunction with your own application.
 
@@ -37,7 +33,7 @@ For example if you wanted full control of when HLJSL processes code blocks you w
 You can also use the css classes `hide-numbers` and `show-numbers` to overwrite the current settings for individual `<pre><code>` blocks:
 
 ```html
-<pre class="hljsl hide-numbers">
+<pre class="hide-numbers">
     <code>
         <!--
             The class hide-numbers will hide the line numbers even
@@ -46,7 +42,7 @@ You can also use the css classes `hide-numbers` and `show-numbers` to overwrite 
     <code>
 </pre>
 
-<pre class="hljsl show-numbers">
+<pre class="show-numbers">
     <code>
         <!--
             The class show-numbers will show the line numbers even
@@ -73,16 +69,18 @@ You may include or exclude any combination of these options. Any missing options
 
 ## Compile With a Different Theme
 
-HLJSL uses sassy css for themes. If you would like to modify the built in theme, use a different theme, or create your own theme you should download a copy of this repository and edit the `src/scss/hljsl.scss` file.
+HLJSL uses sassy css (sass, or scss specifically) for themes. If you would like to modify the built in theme, use a different theme, or create your own theme you should download a copy of this repository and edit the `src/scss/hljsl.scss` file.
 
-If you want to use a different theme you should edit the first line of the `hljsl.scss` file to point to the theme you want. New themes should be added in the `theme` directory following the pattern of the `stackoverflow.scss` file.
+If you want to use a different theme you should edit the first line of the `hljsl.scss` file to point to the theme you want. New themes should be added in the `theme` directory following the pattern of the `caboodle-tech.scss` file.
 
 Once you have modified the theme to your liking or created and added your own you can compile your own production files with the following commands:
 
 ```bash
-# Open a terminal at the root of the repository
-npm install   # Only required once
-npm run build # Build the entire production release
+# Open a terminal at the root of the repository and run the following:
+pnpm install   # Only required once
+pnpm run build # Build the entire production release
+
+# Note: You can use `npm` instead of `pnpm` but any pull request you submit may not be accepted!
 ```
 
 You can now add the `hljsl.min.css` file in the `dist` directory to your site to override the original styles HLJSL comes precompiled with.
@@ -92,19 +90,19 @@ You can now add the `hljsl.min.css` file in the `dist` directory to your site to
 If you would like full control over HLJSL's build process you can download a copy of this repository and use the following commands at the root the repository:
 
 ```bash
-npm install # Run once to install dependencies
+# Run once to install dependencies:
+pnpm install 
 
 # Make any changes you wish in the `src` directory then run:
-npm run build     # Complete production build of HLJSL
-npm run build:css # Compile only the scss files of HLJSL
-npm run build:zip # Bundle all currently compiled files into a zip
+# All files created by a build command will be output to the `dist` directory.
+pnpm run build
 
-# All files created by a build command will be output to the `dist` directory
+# Note: You can use `npm` instead of `pnpm` but any pull request you submit may not be accepted!
 ```
 
 ## Public Methods
 
-The primary instance of HLJSL added globally to the page as `hljsl` has the following publicly available methods. You can also create a new instance of HLJSL and provide it with a [configuration object](#configure) that modifies the new instances settings.
+The primary instance of HLJSL added globally to the page as `hljsl` has the following publicly available methods:
 
 #### **connect**
 
