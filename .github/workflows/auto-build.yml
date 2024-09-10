@@ -29,9 +29,6 @@ jobs:
         run: pnpm install
 
       - name: Build 🔧
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
         run: |
           pnpm ci
           pnpm run build
