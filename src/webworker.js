@@ -68,6 +68,66 @@ class Webworker {
     }
 
     /**
+     * Extracts inline <script> and <style> tags from the provided code and replaces their content
+     * with placeholders. The original content is stored in a replacements object, which maps
+     * placeholders to the highlighted content. This is used to further highlight HTML code.
+     *
+     * @param {string} code The input code containing inline <script> and <style> tags.
+     * @returns {Object} An object containing:
+     *                  - preprocessedCode: {string} The code with inline <script> and <style> content
+                                                     replaced by placeholders.
+     *                  - replacements: {Object} An object mapping placeholders to the highlighted content.
+     *                  - length: {number} The number of replacements made.
+     */
+    #extractInlineScriptsAndStyles(code) {
+        // Object to store the original content mapped to the placeholders
+        const replacements = {
+            length: 0
+        };
+        let scriptCount = 0;
+        let styleCount = 0;
+
+        // Regular expression to match <script> and <style> tags (with encoded or literal brackets)
+        const regex = /(&lt;|<)(script|style)(.*?)(&gt;|>)([\s\S]*?)(&lt;\/|<\/)(script|style)(&gt;|>)/gi;
+
+        // Find all matches of script or style tags
+        const preprocessedCode = code.replace(regex, (match, p1, tagType, attrs, p4, content) => {
+            let placeholder = '';
+            let result = '';
+
+            if (tagType === 'script') {
+                placeholder = `SCRIPT__${scriptCount}`;
+                scriptCount += 1;
+                replacements.length += 1;
+                result = self.hljs.highlightAuto(content, ['javascript']);
+            } else if (tagType === 'style') {
+                placeholder = `STYLE__${styleCount}`;
+                styleCount += 1;
+                replacements.length += 1;
+                result = self.hljs.highlightAuto(content, ['css', 'scss', 'sass', 'less']);
+            }
+
+            // If no language was detected try the second best.
+            if (!result.language && result?.secondBest?.language) {
+                result = result.secondBest;
+            }
+
+            // HLJS encodes & to &amp; undo this because it breaks already encoded HTML entities.
+            if (result.value) {
+                result.value = result.value.replace(/&amp;([a-z]+;)/gi, '&$1');
+            }
+
+            // Store the processed content.
+            replacements[placeholder] = result.value;
+
+            // Replace only the inner text (content) with the placeholder
+            return match.replace(content, placeholder);
+        });
+
+        return { preprocessedCode, replacements };
+    }
+
+    /**
      * Handles incoming messages, processes the code for syntax highlighting, and sends back the result.
      *
      * @param {MessageEvent} evt The message event containing the data to be processed.
@@ -93,12 +153,15 @@ class Webworker {
             }
         }
 
+        // Check for style or script tags and preprocess the code in case it turns out to be HTML.
+        const { preprocessedCode, replacements } = this.#extractInlineScriptsAndStyles(code);
+
         // Have highlight.js highlight the code.
         let result = '';
         if (codeLang.length === 0 || !codeLang[0]) {
-            result = self.hljs.highlightAuto(code);
+            result = self.hljs.highlightAuto(preprocessedCode);
         } else {
-            result = self.hljs.highlightAuto(code, codeLang);
+            result = self.hljs.highlightAuto(preprocessedCode, codeLang);
         }
 
         // If no language was detected try the second best.
@@ -114,6 +177,15 @@ class Webworker {
         // Fix HTML.
         if (result.language === 'html') {
             this.#doctorHtmlResult(result);
+        }
+
+        // Replace the placeholders with their processed content.
+        if (replacements.length > 0) {
+            Object.keys(replacements).forEach((placeholder) => {
+                if (placeholder !== 'length') {
+                    result.value = result.value.replace(placeholder, replacements[placeholder]);
+                }
+            });
         }
 
         // Send back the result.
