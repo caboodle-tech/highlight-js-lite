@@ -128,8 +128,8 @@ pre.hljsl, .hljsl pre, .hljs pre {
     .hljsl-clipboard {
         position: absolute;
         cursor: pointer;
-        top: 1em;
-        right: 1em;
+        top: 1rem;
+        right: 1rem;
         padding: 7px 6px 3px 6px;
         border: 1px solid var(--highlight-btn-border);
         background: var(--highlight-alt-bg);
@@ -171,7 +171,7 @@ pre.hljsl, .hljsl pre, .hljs pre {
         }
 
         td:last-child {
-            padding: 0 1em;
+            padding: 0 1rem;
             width: 100%;
             background: var(--highlight-bg);
         }
@@ -196,6 +196,7 @@ pre.hljsl, .hljsl pre, .hljs pre {
         border-left: 0;
 
         td {
+            white-space: pre;
             min-width: initial;
             border-top: 0;
             border-right: 0;

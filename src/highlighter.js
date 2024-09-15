@@ -143,35 +143,35 @@ class Highlighter {
     #correctPadding(elem) {
         // Don't waste time reprocessing a block.
         if (elem.classList.contains('fixed-padding') ||
-            elem.parentElement.classList.contains('fixed-padding') ||
-            elem.querySelector('fixed-padding')
+        elem.parentElement.classList.contains('fixed-padding') ||
+        elem.querySelector('fixed-padding')
         ) { return elem; }
         // Enforce proper <pre><code> structure; only useful when the user hands us an element to process.
         let pre;
         let code;
         if (elem.nodeName === 'PRE') {
-            // Correct pre element.
+        // Correct pre element.
             pre = elem;
             code = elem.querySelector('code');
             if (!code) {
-                // Incorrect code element.
+            // Incorrect code element.
                 code = document.createElement('CODE');
                 code.innerText = pre.innerText;
                 pre.innerHTML = '';
                 pre.appendChild(code);
             }
         } else if (elem.nodeName === 'CODE') {
-            // Correct code element.
+        // Correct code element.
             pre = elem.closest('pre');
             code = elem;
             if (!pre) {
-                // Incorrect pre element.
+            // Incorrect pre element.
                 pre = document.createElement('PRE');
                 code.parentElement.insertBefore(pre, elem);
                 pre.appendChild(code);
             }
         } else {
-            // Pre and code missing entirely.
+        // Pre and code missing entirely.
             pre = document.createElement('PRE');
             code = document.createElement('CODE');
             code.innerText = elem.innerHTML;
@@ -181,10 +181,18 @@ class Highlighter {
         }
         // Break the code into their lines for processing.
         const lines = code.innerText.split('\n');
+        // If there are 2+ lines catch the edge case of the first line being on the same line as the code tag.
+        if (lines.length > 1 && lines[0].trim() !== '') {
+            const firstLineIndent = lines[0].match(/^\s*/)[0].length;
+            if (firstLineIndent === 0) {
+                const secondLineIndent = lines[1].match(/^\s*/)[0].length;
+                lines[0] = ' '.repeat(secondLineIndent) + lines[0];
+            }
+        }
         /**
-         * Remove empty lines from the start and end of the code. We cannot
-         * use trim because it will wipe the indentation we are trying to find.
-         */
+     * Remove empty lines from the start and end of the code. We cannot
+     * use trim because it will wipe the indentation we are trying to find.
+     */
         let startIndex = 0;
         let endIndex = lines.length - 1;
         // Find the index of the first non-empty line from the start.

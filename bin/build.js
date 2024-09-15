@@ -128,7 +128,7 @@ const buildScss = () => {
             }
 
             // Write the compiled CSS to the destination file synchronously
-            Fs.writeFileSync(item.dest, result.css);
+            Fs.writeFileSync(item.dest, `${licenseHeader}\n${result.css}`);
         } catch (error) {
             console.error(`Error processing SCSS file ${item.src}:`, error);
         }
