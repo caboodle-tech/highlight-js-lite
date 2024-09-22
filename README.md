@@ -108,10 +108,6 @@ The primary instance of HLJSL added globally to the page as `hljsl` has the foll
 
 - Connect to HLJSL's web worker. This is automatically done but you can trigger it earlier if you like.
 
-#### **copyToClipboard** (private)
-
-- This is public because of scoping needs but it should not be used.
-
 #### **disconnect**
 
 - Disconnect from HLJSL's web worker.

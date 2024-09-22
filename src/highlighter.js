@@ -63,10 +63,12 @@ class Highlighter {
                  * a delay to help minimize edge cases of unprocessed blocks on pages with many code
                  * blocks.
                  */
-                setTimeout(() => {
-                    observer.disconnect();
-                }, 250);
                 this.highlight(entry.target);
+                setTimeout(() => {
+                    if (entry.target.hasAttribute('data-hljsl-id')) {
+                        observer.disconnect();
+                    }
+                }, 500);
             }
         });
     }
@@ -106,16 +108,27 @@ class Highlighter {
     /**
      * Copy code from a block to the users clipboard.
      *
-     * @param {HTMLElement} button The copy to clipboard button that was pressed.
+     * @param {HTMLElement} evt The event that triggered this function.
      * @returns {void} Used as a short circuit.
      */
-    copyToClipboard(button) {
-        // TODO: Protect calling this!
-        const table = button.nextElementSibling;
-        if (table.nodeName !== 'TABLE') { return; }
+    #copyToClipboard(evt) {
+        // Only process this event if we can find the table with the code to copy.
+        let elem = evt.target;
+        while (elem && elem.nodeName !== 'CODE' && elem.nodeName !== 'PRE') {
+            elem = elem.parentElement;
+        }
+        if (!elem) { return; }
+        const button = elem.querySelector('button.hljsl-clipboard');
+        const table = elem.querySelector('table');
+        if (!table || !button) { return; }
         // Visually show the table is being copied.
         button.ariaPressed = true;
         table.classList.add('copy-to-clipboard');
+        // Remove the visual effect; place this here just in case an error occurs.
+        setTimeout(() => {
+            table.classList.remove('copy-to-clipboard');
+            button.ariaPressed = false;
+        }, 500);
         // Actually copy the table to the users clipboard:
         const cells = table.querySelectorAll('tr td:nth-child(2)');
         // Copy data to a temporary div.
@@ -128,11 +141,6 @@ class Highlighter {
             .catch((error) => {
                 console.error('Failed to copy text to clipboard:', error);
             });
-        // Remove the visual effect.
-        setTimeout(() => {
-            table.classList.remove('copy-to-clipboard');
-            button.ariaPressed = false;
-        }, 500);
     }
 
     /**
@@ -190,9 +198,9 @@ class Highlighter {
             }
         }
         /**
-     * Remove empty lines from the start and end of the code. We cannot
-     * use trim because it will wipe the indentation we are trying to find.
-     */
+         * Remove empty lines from the start and end of the code. We cannot
+         * use trim because it will wipe the indentation we are trying to find.
+         */
         let startIndex = 0;
         let endIndex = lines.length - 1;
         // Find the index of the first non-empty line from the start.
@@ -331,7 +339,7 @@ class Highlighter {
             this.connect();
         }
         // Do not waste time reprocessing a block.
-        if (elem.hasAttribute('hljsl-id')) { return; }
+        if (elem.hasAttribute('data-hljsl-id')) { return; }
         /**
          * This should have been added already but a deferred code block that the
          * user wants to manually process will be missing this.
@@ -527,6 +535,13 @@ class Highlighter {
         elem.innerHTML = msg.code.trim();
         // Place the code block on the same line as the pre block to remove those empty lines.
         elem.parentElement.innerHTML = elem.outerHTML.trim(); // This loses our reference to elem so it goes last!
+        /**
+         * Hook the copy to clipboard button so the copy operation can be performed privately.
+         * Because we lost our reference to elem we must find the button again.
+         */
+        const button = document.querySelector(`[data-hljsl-id="${msg.id}"] button.hljsl-clipboard`);
+        button.addEventListener('click', this.#copyToClipboard);
+        button.addEventListener('keydown', this.#copyToClipboard);
     }
 
     /**

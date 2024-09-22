@@ -1,3 +1,9 @@
+/**
+ * @deprecated
+ *
+ * With correct HLJS settings HTML is handles as xml or django. This was an unnecessary lesson in
+ * wasted time and pain. I will keep this language file for reference but it is not needed.
+ */
 export default () => ({
     case_insensitive: true,  // HTML is case-insensitive.
     contains: [
@@ -135,3 +141,39 @@ export default () => ({
         }
     ]
 });
+
+
+/**
+ * Highlight.js v11+ no longer sanitizes code for you so unless the user remembered to use HTML
+ * entities we can check for the following entities and symbols to determine if the code if HTML like.
+ */
+export default [
+    '&copy;',   '©',
+    '&reg;',    '®',
+    '&trade;',  '™',
+    '&mdash;',  '—',
+    '&ndash;',  '–',
+    '&deg;',    '°',
+    '&euro;',   '€',
+    '&pound;',  '£',
+    '&yen;',    '¥',
+    '&cent;',   '¢',
+    '&micro;',  'µ',
+    '&sect;',   '§',
+    '&para;',   '¶',
+    '&hellip;', '…',
+    '&times;',  '×',
+    '&divide;', '÷',
+    '&plusmn;', '±',
+    '&frac12;', '½',
+    '&frac14;', '¼',
+    '&frac34;', '¾',
+    '&quot;',   // Do not check for the actual symbol that could exist in other languages besides HTML
+    '&apos;',   // Do not check for the actual symbol that could exist in other languages besides HTML
+    '&nbsp;',   // Do not check for the actual symbol that could exist in other languages besides HTML
+    '&br;',     // No visible symbol (line break)
+    '&em;',     // No visible symbol (emphasis tag)
+    '&strong;', // No visible symbol (strong emphasis tag)
+    '&sub;',    // No visible symbol (subscript tag)
+    '&sup;'     // No visible symbol (superscript tag)
+];
