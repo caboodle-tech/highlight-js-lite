@@ -81,12 +81,19 @@ class Webworker {
         let codeLang = msg.codeLang.split(' ');
         codeLang = codeLang.filter((value) => validCodeLanguages.includes(value));
 
+        /**
+         * Help highlight languages that are commonly broken during the highlighting process.
+         */
         if (codeLang.includes('css')) {
             codeLang.push('scss', 'less');
         }
 
         if (codeLang.includes('ini')) {
             codeLang.push('abnf', 'yaml');
+        }
+
+        if (codeLang.includes('php')) {
+            codeLang.push('php-template');
         }
 
         let preprocessedCode = code;

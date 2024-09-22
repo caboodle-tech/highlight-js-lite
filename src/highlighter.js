@@ -58,12 +58,12 @@ class Highlighter {
     #blockInView(entries, observer) {
         entries.forEach((entry) => {
             if (entry.isIntersecting) {
+                this.highlight(entry.target);
                 /**
                  * This block is about to be processed so stop watching it. We stop the observer on
                  * a delay to help minimize edge cases of unprocessed blocks on pages with many code
                  * blocks.
                  */
-                this.highlight(entry.target);
                 setTimeout(() => {
                     if (entry.target.hasAttribute('data-hljsl-id')) {
                         observer.disconnect();
@@ -330,6 +330,24 @@ class Highlighter {
      * @param {HTMLElement} elem The code element to highlight.
      */
     highlight(elem) {
+        /**
+         * Edge case: If the code block is inside a closed details element browsers will optimize
+         * the code block by not rendering it. Wait until the details element is opened and the code
+         * block has been properly added to the DOM before processing it.
+         */
+        const details = elem.closest('details');
+        if (details && !details?.dataset?.hljslDelay) {
+            details.dataset.hljslDelay = 'true';
+            setTimeout(() => {
+                this.highlight(elem);
+            }, 1);
+        }
+        // Before fixing the padding check if we need to hide line numbers.
+        if (this.#hideNumbers) {
+            elem.classList.add('hide-numbers');
+        }
+        // eslint-disable-next-line no-param-reassign
+        elem = this.#correctPadding(elem); // The original element is changed so we must save (capture) the new element!
         // If the web worker is not connected do so now.
         if (!this.isConnected()) {
             /**
@@ -341,14 +359,14 @@ class Highlighter {
         // Do not waste time reprocessing a block.
         if (elem.hasAttribute('data-hljsl-id')) { return; }
         /**
-         * This should have been added already but a deferred code block that the
+         * These next two steps should have been added already but a deferred code block that the
          * user wants to manually process will be missing this.
          */
         if (this.#hideNumbers) {
             elem.parentElement.classList.add('hide-numbers');
         }
         // eslint-disable-next-line no-param-reassign
-        elem = this.#correctPadding(elem); // The original element is changed so we must save (capture) the new element.
+        elem = this.#correctPadding(elem); // The original element is changed so we must save (capture) the new element!
         /**
          * This should have been added already but a deferred code block that the
          * user wants to manually process will be missing this.
@@ -488,23 +506,15 @@ class Highlighter {
      * Automatically process code blocks according to the default or global settings.
      */
     #processBlocks() {
-        // We automatically fix all code block padding and show or hide line numbers no matter what.
-        document.body.querySelectorAll('pre code').forEach((block) => {
-            // Before fixing the padding check if we need to hide line numbers.
-            if (this.#hideNumbers) {
-                block.classList.add('hide-numbers');
-            }
-            this.#correctPadding(block);
-        });
-        // Now process the page according to the users/global settings.
+        // Do not auto process the page if autoLoad is false.
+        if (!this.#autoLoad) { return; }
+        // Process the page according to the users/global settings.
         const selector = this.getQuerySelectorNotWithinString('pre code', this.#ignoreElements);
         const autoProcess = this.getQuerySelectorFindAllString(this.#onlyAutoProcess);
         const elems = document.querySelectorAll(autoProcess);
         elems.forEach((elem) => {
             const blocks = elem.querySelectorAll(selector);
             blocks.forEach((block) => {
-                // Stop processing if autoLoad is false; we only fix the padding and spacing.
-                if (!this.#autoLoad) { return; }
                 this.#processBlock(block);
             });
         });

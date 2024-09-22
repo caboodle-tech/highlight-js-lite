@@ -116,6 +116,10 @@
     font-weight: bold;
 }
 
+pre:has(> code) {
+    overflow: hidden;
+}
+
 pre.hljsl, .hljsl pre, .hljs pre {
     white-space: pre-wrap;
     white-space: -moz-pre-wrap;
