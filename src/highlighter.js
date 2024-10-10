@@ -65,7 +65,7 @@ class Highlighter {
                  * blocks.
                  */
                 setTimeout(() => {
-                    if (entry.target.hasAttribute('data-hljsl-id')) {
+                    if (entry.target.hasAttribute('data-hljsl-id') && !entry.target.hasAttribute('data-unprocessed')) {
                         observer.disconnect();
                     }
                 }, 500);
@@ -357,7 +357,7 @@ class Highlighter {
             this.connect();
         }
         // Do not waste time reprocessing a block.
-        if (elem.hasAttribute('data-hljsl-id')) { return; }
+        if (elem.hasAttribute('data-hljsl-id') && !elem.hasAttribute('data-unprocessed')) { return; }
         /**
          * These next two steps should have been added already but a deferred code block that the
          * user wants to manually process will be missing this.
@@ -374,6 +374,7 @@ class Highlighter {
         elem.classList.add('hljs');
         // Tag each code block with a unique ID so we can refer back to it after the webworker's processing.
         elem.dataset.hljslId = this.createId();
+        elem.dataset.unprocessed = 'true';
         // Message the web worker.
         const msg = {
             code: this.#getTrueInnerText(elem),
@@ -533,6 +534,7 @@ class Highlighter {
         if (!elem) {
             return;
         }
+        elem.removeAttribute('data-unprocessed');
         /**
          * Make sure the code block has a HLJS language tag. If it already does then this should be
          * the same that was used during the processing. If you were missing the language tag this

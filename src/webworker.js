@@ -51,14 +51,38 @@ class Webworker {
      */
     buildTable(code, pageLang = 'en') {
         let table = `${this.buildCopyToClipboardButton(pageLang)}<table class="hljsl-table">\n<tbody>\n`;
+
         const lines = code.trim().split('\n');
+        let openSpan = ''; // Keep track of any open span.
+
         lines.forEach((line, i) => {
-            if (line.length === 0) {
-                // eslint-disable-next-line no-param-reassign
-                line = '<br>';
+            let modifiedLine = line;
+
+            // Check if there is an opening span tag in the line.
+            const openingSpanMatch = modifiedLine.match(/<span[^>]*>/);
+            const closingSpanMatch = modifiedLine.match(/<\/span>/);
+
+            // If we have an open span but no closing span, keep it open and prepend it to the next line.
+            if (openSpan) {
+                modifiedLine = openSpan + modifiedLine; // Prepend the open span to the current line.
             }
-            table += `<tr><td>${i + 1}</td><td>${line}</td></tr>\n`;
+
+            // If there is an opening span and no closing span, keep it for the next line.
+            if (openingSpanMatch && !closingSpanMatch) {
+                [openSpan] = openingSpanMatch; // Save the opening span for the next line.
+            } else if (closingSpanMatch) {
+                openSpan = ''; // Close the span and reset.
+            }
+
+            // If the line is empty, replace it with a <br> tag.
+            if (modifiedLine.length === 0) {
+                modifiedLine = '<br>';
+            }
+
+            // Add the line number and content to the table.
+            table += `<tr><td>${i + 1}</td><td>${modifiedLine}</td></tr>\n`;
         });
+
         return `${table.trim()}</tbody></table>`;
     }
 
@@ -78,7 +102,7 @@ class Webworker {
         const { id } = msg;
         const { pageLang } = msg;
         const { code } = msg;
-        let codeLang = msg.codeLang.split(' ');
+        let codeLang = msg.codeLang.toLowerCase().split(' ');
         codeLang = codeLang.filter((value) => validCodeLanguages.includes(value));
 
         /**
@@ -137,10 +161,10 @@ class Webworker {
      */
     #registerAliases() {
         // Aliasing Vim Script as `vim`.
-        hljs.registerAliases(['vim-script'], { languageName: 'vim' });
+        self.hljs.registerAliases(['vim-script'], { languageName: 'vim' });
 
         // Aliasing PHP versions as `php`.
-        hljs.registerAliases(['php5', 'php6', 'php7', 'php8', 'php9'], { languageName: 'php' });
+        self.hljs.registerAliases(['php5', 'php6', 'php7', 'php8', 'php9'], { languageName: 'php' });
     }
 
 }

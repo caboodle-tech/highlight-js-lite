@@ -137,8 +137,8 @@ pre.hljsl, .hljsl pre, .hljs pre {
     .hljsl-clipboard {
         position: absolute;
         cursor: pointer;
-        top: 1em;
-        right: 1em;
+        top: 10px;
+        right: 10px;
         padding: 7px 6px 3px 6px;
         border: 1px solid var(--highlight-btn-border);
         background: var(--highlight-alt-bg);
