@@ -83,7 +83,7 @@ class Webworker {
             table += `<tr><td>${i + 1}</td><td>${modifiedLine}</td></tr>\n`;
         });
 
-        return `${table.trim()}</tbody></table>`;
+        return { table: `${table.trim()}</tbody></table>`, lines: lines.length };
     }
 
     /**
@@ -143,11 +143,14 @@ class Webworker {
             result.value = result.value.replace(/&amp;([a-z]+;)/gi, '&$1');
         }
 
+        const { table, lines } = this.buildTable(result.value, pageLang);
+
         // Send back the result.
         const reply = {
-            code: this.buildTable(result.value, pageLang),
+            code: table,
             id,
-            language: result.language
+            language: result.language,
+            lines
         };
         self.postMessage(JSON.stringify(reply));
     }

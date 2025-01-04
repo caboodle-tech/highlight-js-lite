@@ -151,6 +151,9 @@
             <li>
                 <strong>hideNumbers=true</strong> will disable showing the line numbers on processed blocks.
             </li>
+            <li>
+                <strong>minLineNumbers=[# || true]</strong> will auto hide line numbers for blocks with less than <code>#</code> lines, <code>true</code> will use the default of 5.
+            </li>
         </ul>
         <p>
             For example if you wanted full control of when HLJSL processes code blocks you would add code similar to the following in your head tag:
@@ -191,12 +194,16 @@
             <code>
                 &lt;script&gt;
                     window.hljslConfig = {
-                        autoLoad: true,             // Auto process all pre code blocks
-                        hideNumbers: false,         // Hide the line numbers for code blocks
-                        ignoreElements: [],         // Tags, .classes, and/or #ids not to look within
-                        lang: 'en-us',              // Language help messages should display in
-                        lazyLoad: true,             // Process code blocks only when they may come into view
-                        onlyAutoProcess: ['body']   // Tags, .classes, and/or #ids of elements to look within
+                        autoLoad: true,           // Auto process all pre code blocks
+                        hideNumbers: false,       // Hide the line numbers for code blocks
+                        ignoreElements: [],       // Tags, .classes, and/or #ids not to look within
+                        lang: 'en-us',            // Language help messages should display in
+                        lazyLoad: true,           // Process code blocks only when they may come into view
+                        minLineNumbers: 5,        // Hide line numbers for code blocks with less than this number of lines:
+                                                  // - You can provide a bool instead of a number
+                                                  // - true will default to 5 lines
+                                                  // - false disables this feature which is the default setting
+                        onlyAutoProcess: ['body'] // Tags, .classes, and/or #ids of elements to look within
                     }
                 &lt;/script&gt;
             </code>

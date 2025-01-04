@@ -15,6 +15,10 @@ class Highlighter {
 
     #lazyLoad = true;
 
+    #minLineNumbers = 5;
+
+    #minLineNumbersEnabled = false;
+
     #onlyAutoProcess = ['body'];
 
     #root = '';
@@ -420,7 +424,7 @@ class Highlighter {
      * Initializes HLJSL and checks for various simplified settings (options).
      */
     #initialize() {
-        // // Set the scripts root path.
+        // Set the scripts root path. @deprecated
         // this.#root = this.#getScriptsDirname();
         // Set the apps language.
         this.#lang = this.getUserLanguage();
@@ -445,6 +449,19 @@ class Highlighter {
         }
         if (urlParams.get('lazyLoad')) {
             this.#lazyLoad = this.isTrue(urlParams.get('lazyLoad'));
+        }
+        if (urlParams.get('minLineNumbers')) {
+            const minLineNumbersParam = urlParams.get('minLineNumbers');
+            if (minLineNumbersParam !== null) {
+                if (this.isTrue(minLineNumbersParam)) {
+                    this.#minLineNumbersEnabled = true;
+                } else if (!isNaN(parseInt(minLineNumbersParam, 10))) {
+                    this.#minLineNumbers = parseInt(minLineNumbersParam, 10);
+                    this.#minLineNumbersEnabled = true;
+                } else {
+                    this.#minLineNumbersEnabled = false;
+                }
+            }
         }
         // Ensure HLJSL is accessible globally.
         window.hljsl = this;
@@ -544,6 +561,14 @@ class Highlighter {
             elem.classList.add(`language-${msg.language}`);
         }
         // Clean the response just in case an empty newline snuck in at the end.
+        const code = msg.code.trim();
+        // If the user wants to hide line numbers for small code blocks do so now.
+        if (this.#minLineNumbersEnabled) {
+            if (msg.lines < this.#minLineNumbers) {
+                elem.classList.add('hide-numbers');
+            }
+        }
+        // Clean the response just in case an empty newline snuck in and add the processed code to the code block.
         elem.innerHTML = msg.code.trim();
         // Place the code block on the same line as the pre block to remove those empty lines.
         elem.parentElement.innerHTML = elem.outerHTML.trim(); // This loses our reference to elem so it goes last!
@@ -583,6 +608,13 @@ class Highlighter {
 
         if (this.whatIs(config.lazyLoad) === 'boolean') {
             this.#lazyLoad = config.lazyLoad;
+        }
+
+        if (this.whatIs(config.minLineNumbers) === 'boolean') {
+            this.#minLineNumbersEnabled = config.minLineNumbers;
+        } else if (this.whatIs(config.minLineNumbers) === 'number') {
+            this.#minLineNumbers = config.minLineNumbers;
+            this.#minLineNumbersEnabled = true;
         }
 
         if (this.whatIs(config.onlyAutoProcess) === 'array') {
