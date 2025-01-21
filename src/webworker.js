@@ -15,15 +15,40 @@ class Webworker {
         { entity: '&semi;', symbol: ';', regex: /&semi;/g }
     ];
 
+    #possibleJsTemplate = [
+        // EJS-style patterns
+        /(?:<|&lt;)%.*%(?:>|&gt;)/,                    // Basic EJS
+        /(?:<|&lt;)%=.*%(?:>|&gt;)/,                   // EJS output
+        /(?:<|&lt;)%-.*%(?:>|&gt;)/,                   // EJS unescaped output
+        /(?:<|&lt;)%#.*%(?:>|&gt;)/,                   // EJS comments
+        // Handlebars/Mustache patterns
+        /\{\{.*?\}\}/,                                 // Basic interpolation
+        /\{\{#.*?\}\}.*?\{\{\/.*?\}\}/,                // Block helpers
+        /\{\{!.*?\}\}/,                                // Comments
+        /\{\{>.*?\}\}/,                                // Partials
+        /\{\{#if .*?\}\}.*?\{\{\/if\}\}/,              // Conditionals
+        /\{\{#each .*?\}\}.*?\{\{\/each\}\}/,          // Iteration
+        // Other template engines
+        /\{%.*?%\}/,                                   // Nunjucks/Liquid/Twig blocks
+        /\{#.*?#\}/,                                   // Jinja2 comments
+        /\{%.*?\s+.*?\s*%\}/,                          // Twig blocks
+        /(?:<|&lt;)%-.*%(?:>|&gt;)/,                   // Pug unescaped output
+        /\{\{%.*?%\}\}/,                               // Twig special blocks
+        // Generic patterns
+        /(?:\{\{|(?:<|&lt;)%).*?for\s+.*?\s+in\s+.*?/, // Generic iteration
+        /\{\{.*?\|.*?\}\}/                             // Filter syntax
+    ];
+
     constructor(scriptDirname) {
         if (Webworker.#instance) {
             return Webworker.#instance;
         }
-        Webworker.#instance = this;
 
         importScripts(`${scriptDirname}hljs.min.js`);
         this.#registerAliases();
         self.onmessage = this.onMessage.bind(this);
+
+        Webworker.#instance = this;
     }
 
     /**
@@ -110,6 +135,16 @@ class Webworker {
          */
         if (codeLang.includes('css')) {
             codeLang.push('scss', 'less');
+        }
+
+        if (codeLang.includes('html')) {
+            codeLang = codeLang.filter((lang) => lang !== 'html' && lang !== 'language-html');
+            codeLang.push('django');
+            if (this.#possibleJsTemplate.some((regex) => regex.test(code))) {
+                console.log('JS template detected');
+                codeLang.push('javascript');
+            }
+            codeLang.push('xml');
         }
 
         if (codeLang.includes('ini')) {

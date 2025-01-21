@@ -1,7 +1,7 @@
 /**
  * @deprecated
  *
- * With correct HLJS settings HTML is handles as xml or django. This was an unnecessary lesson in
+ * With correct HLJS settings HTML is handled as xml or django. This was an unnecessary lesson in
  * wasted time and pain. I will keep this language file for reference but it is not needed.
  */
 export default () => ({
@@ -144,8 +144,9 @@ export default () => ({
 
 
 /**
- * Highlight.js v11+ no longer sanitizes code for you so unless the user remembered to use HTML
- * entities we can check for the following entities and symbols to determine if the code if HTML like.
+ * Highlight.js v11+ no longer sanitizes code for you so unless the user remembered
+ * to use HTML entities we can check for the following entities and symbols to determine
+ * if the code is HTML like.
  */
 export default [
     '&copy;',   '©',

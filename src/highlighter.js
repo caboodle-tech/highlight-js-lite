@@ -358,6 +358,7 @@ class Highlighter {
             setTimeout(() => {
                 this.highlight(elem);
             }, 1);
+            return;
         }
         // Before fixing the padding check if we need to hide line numbers.
         if (this.#hideNumbers) {
@@ -400,6 +401,13 @@ class Highlighter {
             pageLang: this.#lang
         };
         this.#worker.postMessage(JSON.stringify(msg));
+        // Fail safe to ensure blocks get highlighted.
+        setTimeout(() => {
+            // If the block is still unprocessed then try to process it again.
+            if (elem.hasAttribute('data-unprocessed')) {
+                this.#worker.postMessage(JSON.stringify(msg));
+            }
+        }, 3000);
     }
 
     /**
