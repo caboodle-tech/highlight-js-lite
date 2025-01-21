@@ -148,52 +148,51 @@ class Highlighter {
     }
 
     /**
-     * Correct the padding of code blocks.
+     * Correct the padding of code blocks while preserving HTML entities.
      *
      * @param {HTMLElement} elem The code element to process.
+     * @returns {HTMLElement} The processed code element.
      */
     #correctPadding(elem) {
         // Don't waste time reprocessing a block.
         if (elem.classList.contains('fixed-padding') ||
-        elem.parentElement.classList.contains('fixed-padding') ||
-        elem.querySelector('fixed-padding')
+            elem.parentElement.classList.contains('fixed-padding') ||
+            elem.querySelector('fixed-padding')
         ) { return elem; }
-        // Enforce proper <pre><code> structure; only useful when the user hands us an element to process.
+
+        // Enforce proper <pre><code> structure
         let pre;
         let code;
         if (elem.nodeName === 'PRE') {
-        // Correct pre element.
             pre = elem;
             code = elem.querySelector('code');
             if (!code) {
-            // Incorrect code element.
                 code = document.createElement('CODE');
-                code.innerText = pre.innerText;
+                code.innerHTML = pre.innerHTML;
                 pre.innerHTML = '';
                 pre.appendChild(code);
             }
         } else if (elem.nodeName === 'CODE') {
-        // Correct code element.
-            pre = elem.closest('pre');
             code = elem;
+            pre = elem.closest('pre');
             if (!pre) {
-            // Incorrect pre element.
                 pre = document.createElement('PRE');
                 code.parentElement.insertBefore(pre, elem);
                 pre.appendChild(code);
             }
         } else {
-        // Pre and code missing entirely.
             pre = document.createElement('PRE');
             code = document.createElement('CODE');
-            code.innerText = elem.innerHTML;
+            code.innerHTML = elem.innerHTML;
             pre.appendChild(code);
             elem.parentElement.insertBefore(pre, elem);
             elem.parentElement.removeChild(elem);
         }
-        // Break the code into their lines for processing.
-        const lines = code.innerText.split('\n');
-        // If there are 2+ lines catch the edge case of the first line being on the same line as the code tag.
+
+        // Use innerHTML to preserve HTML entities when splitting into lines
+        const lines = code.innerHTML.split('\n');
+
+        // Handle first line edge case when it's on the same line as the code tag
         if (lines.length > 1 && lines[0].trim() !== '') {
             const firstLineIndent = lines[0].match(/^\s*/)[0].length;
             if (firstLineIndent === 0) {
@@ -201,44 +200,58 @@ class Highlighter {
                 lines[0] = ' '.repeat(secondLineIndent) + lines[0];
             }
         }
-        /**
-         * Remove empty lines from the start and end of the code. We cannot
-         * use trim because it will wipe the indentation we are trying to find.
-         */
+
+        // Remove empty lines from start and end
         let startIndex = 0;
         let endIndex = lines.length - 1;
-        // Find the index of the first non-empty line from the start.
+
         while (startIndex < lines.length && lines[startIndex].trim() === '') {
-            startIndex += 1;
+            startIndex++;
         }
-        // Find the index of the first non-empty line from the end.
         while (endIndex >= 0 && lines[endIndex].trim() === '') {
-            endIndex -= 1;
+            endIndex--;
         }
-        // Calculate the number of empty lines to remove from the start and end.
-        const numEmptyLinesAtStart = startIndex;
-        const numEmptyLinesAtEnd = lines.length - 1 - endIndex;
-        // Remove the empty lines from the start and end of the array.
-        lines.splice(0, numEmptyLinesAtStart);
-        lines.splice(lines.length - numEmptyLinesAtEnd, numEmptyLinesAtEnd);
-        // Just in case we were given a bad code block save it from erroring out here.
-        if (lines.length === 0) { lines.push(''); }
-        // Count the spaces from the first line, this indicates the indentation we need to remove.
-        const match = lines[0].match(/^\s+/);
-        const indentation = match ? match[0].length : 0;
-        // Remove the unnecessary indentation (padding) at the start of each line.
-        lines.forEach((line, i) => {
-            lines[i] = line.substring(indentation);
+
+        // Extract the relevant lines
+        const processedLines = lines.slice(startIndex, endIndex + 1);
+
+        // Handle empty content
+        if (processedLines.length === 0) {
+            processedLines.push('');
+        }
+
+        // Find the minimum indentation across all non-empty lines
+        let minIndent = Infinity;
+        for (const line of processedLines) {
+            if (line.trim() === '') continue;
+            const match = line.match(/^\s*/);
+            if (match) {
+                minIndent = Math.min(minIndent, match[0].length);
+            }
+        }
+        minIndent = minIndent === Infinity ? 0 : minIndent;
+
+        // Remove the common indentation from all lines
+        processedLines.forEach((line, i) => {
+            if (line.trim() === '') {
+                processedLines[i] = '';
+            } else {
+                const match = line.match(/^\s*/);
+                const currentIndent = match ? match[0].length : 0;
+                processedLines[i] = line.substring(Math.min(currentIndent, minIndent));
+            }
         });
-        // Mark the pre tag as HLJSL.
-        pre.classList.add('hljsl');
-        // Mark the code tag as highlight.js like normal.
-        code.classList.add('hljs');
-        // Make the replacement in the DOM and remove any extra empty new line at the end.
-        code.innerText = lines.join('\n').trim();
+
+        // NOTE: We now have skeleton CSS so add the classes after processing the content
+
+        // Apply the processed content while preserving HTML entities
+        code.innerHTML = processedLines.join('\n').trimEnd();
         code.classList.add('fixed-padding');
-        pre.innerHTML = pre.innerHTML.trim(); // This breaks the users DOM reference!
-        return pre.firstElementChild; // Must return the new code element.
+
+        // Clean up any extra whitespace in the pre tag
+        pre.innerHTML = pre.innerHTML.trim();
+
+        return pre.firstElementChild;
     }
 
     /**
@@ -570,6 +583,10 @@ class Highlighter {
         }
         // Clean the response just in case an empty newline snuck in and add the processed code to the code block.
         elem.innerHTML = msg.code.trim();
+        // Mark the pre tag as HLJSL
+        elem.parentElement.classList.add('hljsl');
+        // Mark the code tag as highlight.js
+        elem.classList.add('hljs');
         // Place the code block on the same line as the pre block to remove those empty lines.
         elem.parentElement.innerHTML = elem.outerHTML.trim(); // This loses our reference to elem so it goes last!
         /**

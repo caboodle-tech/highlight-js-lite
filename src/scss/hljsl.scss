@@ -2,6 +2,55 @@
 
 @include Theme.styles();
 
+@keyframes loading-wave {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+:not(.hljs):not(.hljsl) > pre:has(> code):not(.hljs):not(.hljsl) {
+    background-color: var(--highlight-bg);
+    border: 1px solid var(--highlight-border);
+    white-space: normal;
+    word-wrap: break-word;
+    padding: 5px 5px 5px calc(2.25rem + 5px);
+    position: relative;
+}
+
+:not(.hljs):not(.hljsl) > pre:has(> code):not(.hljs):not(.hljsl)::before {
+    content: '';
+    width: 2.25rem;
+    background-color: var(--highlight-alt-bg);
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    border-right: 1px solid var(--highlight-border);
+}
+
+:not(.hljs):not(.hljsl) > pre:has(> code):not(.hljs):not(.hljsl)::after {
+    content: '';
+    background: linear-gradient(
+        90deg,
+        var(--highlight-bg) 0%,
+        color-mix(in srgb, var(--highlight-bg) 85%, transparent) 25%,
+        color-mix(in srgb, var(--highlight-bg) 90%, transparent) 35%,
+        color-mix(in srgb, var(--highlight-bg) 85%, transparent) 45%,
+        var(--highlight-bg) 70%
+    );
+    background-size: 200% 100%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 2.25rem;
+    border-right: 1px solid var(--highlight-border);
+    animation: loading-wave 2s ease-in-out infinite;
+}
+
 .hljs {
     color: var(--highlight-color);
     background: var(--highlight-bg);
