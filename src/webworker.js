@@ -99,9 +99,9 @@ class Webworker {
                 openSpan = ''; // Close the span and reset.
             }
 
-            // If the line is empty, replace it with a <br> tag.
+            // If the line is empty, add a span that contains a space so this empty line is copyable
             if (modifiedLine.length === 0) {
-                modifiedLine = '<br>';
+                modifiedLine = '<span> </span>';
             }
 
             // Add the line number and content to the table.
@@ -141,7 +141,6 @@ class Webworker {
             codeLang = codeLang.filter((lang) => lang !== 'html' && lang !== 'language-html');
             codeLang.push('django');
             if (this.#possibleJsTemplate.some((regex) => regex.test(code))) {
-                console.log('JS template detected');
                 codeLang.push('javascript');
             }
             codeLang.push('xml');
@@ -155,6 +154,7 @@ class Webworker {
             codeLang.push('php-template');
         }
 
+        // Swap critical HTML entities with their actual symbols so HLJS can properly process them.
         let preprocessedCode = code;
         this.#commonEntityMap.forEach((entityObj) => {
             preprocessedCode = preprocessedCode.replace(entityObj.regex, entityObj.symbol);
@@ -173,10 +173,13 @@ class Webworker {
             result = result.secondBest;
         }
 
-        // HLJS encodes & to &amp; undo this because it breaks already encoded HTML entities.
+        /**
+         * HLJS encodes & to &amp; undo this because it breaks already encoded HTML entities.
+         * @deprecated
         if (result.value) {
             result.value = result.value.replace(/&amp;([a-z]+;)/gi, '&$1');
         }
+         */
 
         const { table, lines } = this.buildTable(result.value, pageLang);
 
