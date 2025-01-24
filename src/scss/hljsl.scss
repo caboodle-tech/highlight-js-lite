@@ -11,6 +11,7 @@
     }
 }
 
+/* Before HLJSL has time to load show a skeleton outline and loading animation on all pre blocks */
 :not(.hljs):not(.hljsl) > pre:has(> code):not(.hljs):not(.hljsl) {
     background-color: var(--highlight-bg);
     border: 1px solid var(--highlight-border);
@@ -76,7 +77,6 @@
 .hljs-selector-tag {
     color: var(--highlight-tag);
 }
-
 
 .hljs-operator {
     color: var(--highlight-operator);

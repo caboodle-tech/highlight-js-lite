@@ -1,211 +1,269 @@
 import copyToClipboardMap from './i18n.js';
 import validCodeLanguages from './languages.js';
 
+/**
+ * @typedef {Object} MessageData
+ * @property {string} id Unique identifier for the message
+ * @property {string} pageLang Language code for the page
+ * @property {string} code Code to be highlighted
+ * @property {string} codeLang Language(s) specified for the code
+ */
+
+/**
+ * @typedef {Object} HighlightResult
+ * @property {string} value Highlighted code HTML
+ * @property {string} [language] Detected language
+ * @property {Object} [secondBest] Second best language match
+ * @property {string} secondBest.language Second best detected language
+ */
+
+/**
+ * Web worker class for syntax highlighting code using highlight.js
+ */
 class Webworker {
 
-    // Private static property to hold the instance.
-    static #instance = null;
+    // Private static property to hold the instance
+    static #instance;
 
-    #commonEntityMap = [
-        { entity: '&lt;', symbol: '<', regex: /&lt;/g },
-        { entity: '&gt;', symbol: '>', regex: /&gt;/g },
-        { entity: '&amp;', symbol: '&', regex: /&amp;/g },
-        { entity: '&quot;', symbol: '"', regex: /&quot;/g },
-        { entity: '&apos;', symbol: "'", regex: /&apos;/g },
-        { entity: '&semi;', symbol: ';', regex: /&semi;/g }
-    ];
+    // Private fields with initialized values
+    #validLanguagesSet = new Set(validCodeLanguages);
+    #tableLines = [];
 
-    #possibleJsTemplate = [
+    // Map of HTML entities to their symbol representations
+    #commonEntityMap = new Map([
+        ['&lt;', { symbol: '<', regex: /&lt;/g }],
+        ['&gt;', { symbol: '>', regex: /&gt;/g }],
+        ['&amp;', { symbol: '&', regex: /&amp;/g }],
+        ['&quot;', { symbol: '"', regex: /&quot;/g }],
+        ['&apos;', { symbol: "'", regex: /&apos;/g }],
+        ['&semi;', { symbol: ';', regex: /&semi;/g }]
+    ]);
+
+    // Pre-compiled regex patterns for detecting various template syntaxes
+    #possibleJsTemplate = Object.freeze([
         // EJS-style patterns
-        /(?:<|&lt;)%.*%(?:>|&gt;)/,                    // Basic EJS
-        /(?:<|&lt;)%=.*%(?:>|&gt;)/,                   // EJS output
-        /(?:<|&lt;)%-.*%(?:>|&gt;)/,                   // EJS unescaped output
-        /(?:<|&lt;)%#.*%(?:>|&gt;)/,                   // EJS comments
+        /(?:<|&lt;)%.*?%(?:>|&gt;)/,                    // Basic EJS
+        /(?:<|&lt;)%=.*?%(?:>|&gt;)/,                   // EJS output
+        /(?:<|&lt;)%-.*?%(?:>|&gt;)/,                   // EJS unescaped output
+        /(?:<|&lt;)%#.*?%(?:>|&gt;)/,                   // EJS comments
         // Handlebars/Mustache patterns
-        /\{\{.*?\}\}/,                                 // Basic interpolation
-        /\{\{#.*?\}\}.*?\{\{\/.*?\}\}/,                // Block helpers
-        /\{\{!.*?\}\}/,                                // Comments
-        /\{\{>.*?\}\}/,                                // Partials
-        /\{\{#if .*?\}\}.*?\{\{\/if\}\}/,              // Conditionals
-        /\{\{#each .*?\}\}.*?\{\{\/each\}\}/,          // Iteration
+        /\{\{.*?\}\}/,                                   // Basic interpolation
+        /\{\{#.*?\}\}.*?\{\{\/.*?\}\}/,                 // Block helpers
+        /\{\{!.*?\}\}/,                                 // Comments
+        /\{\{>.*?\}\}/,                                 // Partials
+        /\{\{#if\s+.*?\}\}.*?\{\{\/if\}\}/,            // Conditionals
+        /\{\{#each\s+.*?\}\}.*?\{\{\/each\}\}/,        // Iteration
         // Other template engines
-        /\{%.*?%\}/,                                   // Nunjucks/Liquid/Twig blocks
-        /\{#.*?#\}/,                                   // Jinja2 comments
+        /\{%.*?%\}/,                                    // Nunjucks/Liquid/Twig blocks
+        /\{#.*?#\}/,                                    // Jinja2 comments
         /\{%.*?\s+.*?\s*%\}/,                          // Twig blocks
-        /(?:<|&lt;)%-.*%(?:>|&gt;)/,                   // Pug unescaped output
+        /(?:<|&lt;)%-.*?%(?:>|&gt;)/,                   // Pug unescaped output
         /\{\{%.*?%\}\}/,                               // Twig special blocks
         // Generic patterns
         /(?:\{\{|(?:<|&lt;)%).*?for\s+.*?\s+in\s+.*?/, // Generic iteration
         /\{\{.*?\|.*?\}\}/                             // Filter syntax
-    ];
+    ]);
 
+    // Class level regex patterns for span detection
+    #spanPatterns = {
+        opening: /<span[^>]*>/,
+        closing: /<\/span>/
+    };
+
+    /**
+     * Initialize the web worker and set up highlight.js
+     * @param {string} scriptDirname Directory path for the highlight.js script
+     */
     constructor(scriptDirname) {
         if (Webworker.#instance) {
             return Webworker.#instance;
         }
 
-        importScripts(`${scriptDirname}hljs.min.js`);
-        this.#registerAliases();
-        self.onmessage = this.onMessage.bind(this);
-
-        Webworker.#instance = this;
-    }
-
-    /**
-     * Builds the HTML for a "Copy to Clipboard" button.
-     *
-     * @param {string} pageLang The language of the page, used to determine the button's title.
-     * @returns {string} The HTML from the "Copy to Clipboard" button.
-     */
-    buildCopyToClipboardButton(pageLang) {
-        const langKey = pageLang.toLowerCase().split('-')[0];
-        let title = copyToClipboardMap.en;
-        if (copyToClipboardMap[langKey]) {
-            title = copyToClipboardMap[langKey];
+        try {
+            importScripts(`${scriptDirname}hljs.min.js`);
+            this.#registerAliases();
+            self.onmessage = this.#onMessage.bind(this);
+            Webworker.#instance = this;
+        } catch (error) {
+            console.error('Failed to initialize webworker:', error);
+            throw error;
         }
-        // eslint-disable-next-line max-len
-        return `<button type="button" aria-pressed="false" class="hljsl-clipboard" title="${title}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M21 2h-19v19h-2v-21h21v2zm3 2v20h-20v-20h20zm-2 2h-1.93c-.669 0-1.293.334-1.664.891l-1.406 2.109h-6l-1.406-2.109c-.371-.557-.995-.891-1.664-.891h-1.93v16h16v-16zm-3 6h-10v1h10v-1zm0 3h-10v1h10v-1zm0 3h-10v1h10v-1z"/></svg></button>`;
     }
 
     /**
-     * Builds an HTML table representation of the given code with line numbers.
-     *
-     * @param {string} code The code to be converted into an HTML table.
-     * @param {string} [pageLang='en'] The language code for localization, default is 'en'.
-     * @returns {string} The HTML string of the table with line numbers and a copy-to-clipboard button.
+     * Builds the HTML for a "Copy to Clipboard" button
+     * @param {string} pageLang The language code for button text
+     * @returns {string} HTML markup for the button
      */
-    buildTable(code, pageLang = 'en') {
-        let table = `${this.buildCopyToClipboardButton(pageLang)}<table class="hljsl-table">\n<tbody>\n`;
+    #buildCopyToClipboardButton(pageLang) {
+        const langKey = pageLang.toLowerCase().split('-')[0];
+        const title = copyToClipboardMap[langKey] ?? copyToClipboardMap.en;
+
+        /* eslint-disable */
+        return `<button type="button" aria-pressed="false" class="hljsl-clipboard" title="${title}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path d="M21 2h-19v19h-2v-21h21v2zm3 2v20h-20v-20h20zm-2 2h-1.93c-.669 0-1.293.334-1.664.891l-1.406 2.109h-6l-1.406-2.109c-.371-.557-.995-.891-1.664-.891h-1.93v16h16v-16zm-3 6h-10v1h10v-1zm0 3h-10v1h10v-1zm0 3h-10v1h10v-1z"/>
+            </svg>
+        </button>`.replace(/\s+/g, ' ').trim();
+        /* eslint-enable */
+    }
+
+    /**
+     * Builds an HTML table with line numbers from highlighted code
+     * @param {string} code The highlighted code HTML
+     * @param {string} [pageLang='en'] Language code for the copy button
+     * @returns {{table: string, lines: number}} Table HTML and line count
+     */
+    #buildTable(code, pageLang = 'en') {
+        this.#tableLines.length = 0;
+        let openSpan = '';
 
         const lines = code.trim().split('\n');
-        let openSpan = ''; // Keep track of any open span.
+        const copyButton = this.#buildCopyToClipboardButton(pageLang);
+        this.#tableLines.push(`${copyButton}<table class="hljsl-table"><tbody>`);
 
-        lines.forEach((line, i) => {
-            let modifiedLine = line;
+        for (let i = 0; i < lines.length; i++) {
+            let modifiedLine = lines[i];
 
-            // Check if there is an opening span tag in the line.
-            const openingSpanMatch = modifiedLine.match(/<span[^>]*>/);
-            const closingSpanMatch = modifiedLine.match(/<\/span>/);
-
-            // If we have an open span but no closing span, keep it open and prepend it to the next line.
+            // If we have an open span, prepend it
             if (openSpan) {
-                modifiedLine = openSpan + modifiedLine; // Prepend the open span to the current line.
+                modifiedLine = openSpan + modifiedLine;
             }
 
-            // If there is an opening span and no closing span, keep it for the next line.
+            const openingSpanMatch = modifiedLine.match(this.#spanPatterns.opening);
+            const closingSpanMatch = modifiedLine.match(this.#spanPatterns.closing);
+
+            // Handle span tag continuation across lines
             if (openingSpanMatch && !closingSpanMatch) {
-                [openSpan] = openingSpanMatch; // Save the opening span for the next line.
+                [openSpan] = openingSpanMatch;
             } else if (closingSpanMatch) {
-                openSpan = ''; // Close the span and reset.
+                openSpan = '';
             }
 
-            // If the line is empty, add a span that contains a space so this empty line is copyable
-            if (modifiedLine.length === 0) {
+            // Ensure empty lines are copyable
+            if (!modifiedLine) {
                 modifiedLine = '<span> </span>';
             }
 
-            // Add the line number and content to the table.
-            table += `<tr><td>${i + 1}</td><td>${modifiedLine}</td></tr>\n`;
-        });
-
-        return { table: `${table.trim()}</tbody></table>`, lines: lines.length };
-    }
-
-    /**
-     * Handles incoming messages, processes the code for syntax highlighting, and sends back the result.
-     *
-     * @param {MessageEvent} evt The message event containing the data to be processed.
-     * @property {string} evt.data The JSON string containing the message data.
-     * @property {Object} msg The parsed message object.
-     * @property {string} msg.id The unique identifier for the message.
-     * @property {string} msg.pageLang The language of the page.
-     * @property {string} msg.code The code to be highlighted.
-     * @property {string} msg.codeLang The languages specified for the code.
-     */
-    onMessage(evt) {
-        const msg = JSON.parse(evt.data);
-        const { id } = msg;
-        const { pageLang } = msg;
-        const { code } = msg;
-        let codeLang = msg.codeLang.toLowerCase().split(' ');
-        codeLang = codeLang.filter((value) => validCodeLanguages.includes(value));
-
-        /**
-         * Help highlight languages that are commonly broken during the highlighting process.
-         */
-        if (codeLang.includes('css')) {
-            codeLang.push('scss', 'less');
+            this.#tableLines.push(
+                `<tr><td>${i + 1}</td><td>${modifiedLine}</td></tr>`
+            );
         }
 
-        if (codeLang.includes('html')) {
-            codeLang = codeLang.filter((lang) => lang !== 'html' && lang !== 'language-html');
-            codeLang.push('django');
-            if (this.#possibleJsTemplate.some((regex) => regex.test(code))) {
-                codeLang.push('javascript');
-            }
-            codeLang.push('xml');
-        }
-
-        if (codeLang.includes('ini')) {
-            codeLang.push('abnf', 'yaml');
-        }
-
-        if (codeLang.includes('php')) {
-            codeLang.push('php-template');
-        }
-
-        // Swap critical HTML entities with their actual symbols so HLJS can properly process them.
-        let preprocessedCode = code;
-        this.#commonEntityMap.forEach((entityObj) => {
-            preprocessedCode = preprocessedCode.replace(entityObj.regex, entityObj.symbol);
-        });
-
-        // Have highlight.js highlight the code.
-        let result = '';
-        if (codeLang.length === 0 || !codeLang[0]) {
-            result = self.hljs.highlightAuto(preprocessedCode);
-        } else {
-            result = self.hljs.highlightAuto(preprocessedCode, codeLang);
-        }
-
-        // If no language was detected try the second best.
-        if (!result.language && result?.secondBest?.language) {
-            result = result.secondBest;
-        }
-
-        /**
-         * HLJS encodes & to &amp; undo this because it breaks already encoded HTML entities.
-         * @deprecated
-        if (result.value) {
-            result.value = result.value.replace(/&amp;([a-z]+;)/gi, '&$1');
-        }
-         */
-
-        const { table, lines } = this.buildTable(result.value, pageLang);
-
-        // Send back the result.
-        const reply = {
-            code: table,
-            id,
-            language: result.language,
-            lines
+        this.#tableLines.push('</tbody></table>');
+        return {
+            table: this.#tableLines.join('\n'),
+            lines: lines.length
         };
-        self.postMessage(JSON.stringify(reply));
     }
 
     /**
-     * Registers language aliases for the highlight.js library.
-     *
-     * This method sets up aliases for specific languages to ensure that they can be referenced by
-     * multiple names. For example, it aliases `vim-script` as `vim` and various versions of PHP as
-     * `php`.
+     * Handles incoming messages for code highlighting
+     * @param {MessageEvent<string>} evt The message event containing the code
+     */
+    #onMessage(evt) {
+        try {
+            const msg = JSON.parse(evt.data);
+            const { id, pageLang, code } = msg;
+            const codeLang = this.#processLanguages(msg.codeLang, code);
+
+            const preprocessedCode = this.#preprocessCode(code);
+            let result = this.#highlightCode(preprocessedCode, codeLang);
+
+            // If no language was detected try the second best
+            if (!result.language && result?.secondBest?.language) {
+                result = result.secondBest;
+            }
+
+            const { table, lines } = this.#buildTable(result.value, pageLang);
+
+            self.postMessage(JSON.stringify({
+                code: table,
+                id,
+                language: result.language,
+                lines
+            }));
+        } catch (error) {
+            console.error('Message processing failed:', error);
+            self.postMessage(JSON.stringify({
+                code: msg,
+                id,
+                language: result.language,
+                lines: msg.split('\n').length
+            }));
+        }
+    }
+
+    /**
+     * Processes and expands language hints for better detection
+     * @param {string} codeLang Original language string
+     * @param {string} code The code to analyze
+     * @returns {string[]} Expanded array of language hints
+     */
+    #processLanguages(codeLang, code) {
+        const langs = codeLang.toLowerCase().split(' ')
+            .filter((value) => this.#validLanguagesSet.has(value));
+
+        // Help highlight languages that are commonly broken during the highlighting process
+        if (langs.includes('css')) {
+            langs.push('scss', 'less');
+        }
+
+        if (langs.includes('html')) {
+            langs = langs.filter((lang) => lang !== 'html' && lang !== 'language-html');
+            langs.push('django');
+            if (this.#possibleJsTemplate.some((regex) => regex.test(code))) {
+                langs.push('javascript');
+            }
+            langs.push('xml');
+        }
+
+        if (langs.includes('ini')) {
+            langs.push('abnf', 'yaml');
+        }
+
+        if (langs.includes('php')) {
+            langs.push('php-template');
+        }
+
+        return langs;
+    }
+
+    /**
+     * Preprocesses code by converting HTML entities to symbols
+     * @param {string} code Raw code with HTML entities
+     * @returns {string} Processed code with actual symbols
+     */
+    #preprocessCode(code) {
+        let result = code;
+        for (const [, { symbol, regex }] of this.#commonEntityMap) {
+            result = result.replace(regex, symbol);
+        }
+        return result;
+    }
+
+    /**
+     * Highlights code using highlight.js
+     * @param {string} code Code to highlight
+     * @param {string[]} languages Array of language hints
+     * @returns {HighlightResult} Highlighted code result
+     */
+    #highlightCode(code, languages) {
+        return languages.length && languages[0] ?
+            self.hljs.highlightAuto(code, languages) :
+            self.hljs.highlightAuto(code);
+    }
+
+    /**
+     * Registers language aliases for highlight.js
+     * Helps with language detection by mapping variant names
      */
     #registerAliases() {
-        // Aliasing Vim Script as `vim`.
         self.hljs.registerAliases(['vim-script'], { languageName: 'vim' });
-
-        // Aliasing PHP versions as `php`.
-        self.hljs.registerAliases(['php5', 'php6', 'php7', 'php8', 'php9'], { languageName: 'php' });
+        self.hljs.registerAliases(
+            ['php5', 'php6', 'php7', 'php8', 'php9'],
+            { languageName: 'php' }
+        );
     }
 
 }

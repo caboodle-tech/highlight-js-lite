@@ -1,64 +1,63 @@
+/**
+* @fileoverview Entry point for HLJSL that handles initialization in different environments
+* and manages singleton instances of the Highlighter and Webworker classes.
+*/
+
 import Highlighter from './highlighter.js';
 import Webworker from './webworker.js';
 
-// Return the running scripts directory path regardless of script type or location.
+/**
+* Gets the running script's directory path for all environments
+* @returns {string} Absolute path to the directory containing this script
+*/
 const scriptDirname = (() => {
     const absolutePath = (scriptUrl) => {
-        // Ensure there's no double slash by checking if the pathname already ends with '/'.
         const path = scriptUrl.pathname.endsWith('/') ?
             scriptUrl.pathname :
             scriptUrl.pathname.substring(0, scriptUrl.pathname.lastIndexOf('/') + 1);
-        // Webworker environments can add another slash so double check.
         return scriptUrl.origin + path.replace(/\/{2,}/g, '/');
     };
 
-    // Web Worker environment.
+    // Web Worker environment
     if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
-        if (typeof self.location !== 'undefined') {
-            return absolutePath(new URL(self.location.href));
-        }
-        return '';
+        return absolutePath(new URL(self.location.href));
     }
 
-    // Main thread (non-module script).
-    if (typeof document !== 'undefined' && typeof document.currentScript !== 'undefined') {
+    // Non-module script environment
+    if (typeof document !== 'undefined' && document.currentScript) {
         return absolutePath(new URL(document.currentScript.src));
     }
 
-    // ESM environment (module script).
+    // ES module environment
     if (typeof import.meta !== 'undefined' && import.meta.url) {
         return absolutePath(new URL(import.meta.url));
     }
-
-    return '';
 })();
 
-// Do not allow duplicate instances of anything!
-let HighlighterInstance = null;
-let WebworkerInstance = null;
+// Environment detection
+const isWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
 
-// Auto run Highlighter.
-const InitializesHljsl = (config = {}) => {
+// Singleton instances
+let instance = null;
 
-    if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
-        if (WebworkerInstance) {
-            return WebworkerInstance;
-        }
-        WebworkerInstance = new Webworker(scriptDirname);
-    } else {
-        if (HighlighterInstance) {
-            return HighlighterInstance;
-        }
-        HighlighterInstance = new Highlighter(scriptDirname, config);
-        return HighlighterInstance;
-    }
+/**
+* Initializes HLJSL in the appropriate environment
+* @param {Object} config Configuration options for Highlighter
+* @returns {Highlighter|Webworker} The appropriate singleton instance
+*/
+const InitializeHljsl = (config = {}) => {
+    if (instance) return instance;
 
+    instance = isWorker ?
+        new Webworker(scriptDirname) :
+        new Highlighter(scriptDirname, config);
+
+    return instance;
 };
 
-if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
-    // We don't need hljsl to be available in the webworker.
-    InitializesHljsl();
+// Auto-initialize in the appropriate environment
+if (isWorker) {
+    InitializeHljsl();
 } else {
-    // Allow hljsl to be available in global scope like highlight.js normally is.
-    window.hljsl = InitializesHljsl();
+    window.hljsl = InitializeHljsl();
 }
