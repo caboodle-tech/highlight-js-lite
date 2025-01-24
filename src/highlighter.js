@@ -581,7 +581,10 @@ class Highlighter {
         elem.removeAttribute('data-unprocessed');
 
         if (msg.language) {
-            elem.classList.add(`language-${msg.language}`);
+            // Only when an error occurred will the language be a string of languages
+            msg.language.split(',').forEach((lang) => {
+                elem.classList.add(`language-${lang.trim()}`);
+            });
         }
 
         if (this.#minLineNumbersEnabled && msg.lines < this.#minLineNumbers) {

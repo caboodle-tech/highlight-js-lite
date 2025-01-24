@@ -162,10 +162,10 @@ class Webworker {
      * @param {MessageEvent<string>} evt The message event containing the code
      */
     #onMessage(evt) {
+        const msg = JSON.parse(evt.data);
+        const { id, pageLang, code } = msg;
+        const codeLang = this.#processLanguages(msg.codeLang, code);
         try {
-            const msg = JSON.parse(evt.data);
-            const { id, pageLang, code } = msg;
-            const codeLang = this.#processLanguages(msg.codeLang, code);
 
             const preprocessedCode = this.#preprocessCode(code);
             let result = this.#highlightCode(preprocessedCode, codeLang);
@@ -188,7 +188,7 @@ class Webworker {
             self.postMessage(JSON.stringify({
                 code: msg,
                 id,
-                language: result.language,
+                language: codeLang.join(','),
                 lines: msg.split('\n').length
             }));
         }
@@ -201,7 +201,7 @@ class Webworker {
      * @returns {string[]} Expanded array of language hints
      */
     #processLanguages(codeLang, code) {
-        const langs = codeLang.toLowerCase().split(' ')
+        let langs = codeLang.toLowerCase().split(' ')
             .filter((value) => this.#validLanguagesSet.has(value));
 
         // Help highlight languages that are commonly broken during the highlighting process
