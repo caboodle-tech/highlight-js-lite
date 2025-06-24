@@ -236,7 +236,7 @@
             You can also use the css classes <code>hide-numbers</code> and <code>show-numbers</code> to overwrite the current settings for individual <code>&lt;pre&gt;&lt;code&gt;</code> blocks:
         </p>
         <pre class="hide-numbers">
-            <code>
+            <code class="html">
                 &lt;pre class="hide-numbers"&gt;
                     &lt;code&gt;
                         &lt;!--
@@ -280,6 +280,47 @@
         <p>
             You may include or exclude any combination of these options. Any missing options from the global configuration object will use HLJSL's default for that option.
         </p>
+
+        <div class="header">Mini Editors</div>
+        <p>
+            HLJSL adds a mini editor mode to traditional Highlight.js elements. Simply add the class <code>editor</code> to the <code>pre</code> element of any <code>hljsl</code> pre element and we will make the code area editable. Don't forget to add the language as a class to the <code>code</code> element as well so HLJSL knows what language to use for syntax highlighting.
+        </p>
+        <pre class="hljsl editor"><code class="python">
+            """
+            This is a Python demo but the editor language is not locked. Try copy-pasting
+            different code into this editor to see the syntax highlighting change.
+            """
+            def main():
+                name = input("Enter your name: ")
+                print(f"Hello, {name}!")
+
+            if __name__ == "__main__":
+                main()
+        </code></pre>
+        <p>
+            By default, HLJSL mini editors let users type any code, and the language will be detected automatically as they type. If you want to restrict the editor to a specific language, add both a language class (such as <code>python</code> or <code>html</code>) and the <code>locked</code> class to the <code>code</code> element. This will lock syntax highlighting to your chosen language. The following editor has been locked to HTML so you can test this feature:
+        </p>
+        <pre class="hljsl editor"><code class="html locked">
+            &lt;!-- This code is the exact same code used to create this editor your viewing --&gt;
+            &lt;pre class="hljsl editor"&gt;&lt;code class="html locked"&gt;&lt;/code&gt;&lt;/pre&gt;
+        </code></pre>
+        <p>
+            HLJSL Mini Editors feature advanced copy-to-clipboard support. By default, the copy button copies only the code, but you can enhance this by placing <code>&lt;template&gt;</code> elements directly before and/or after your <code>&lt;pre&gt;</code> block. Any content inside these templates will be included with the copied code, perfect for sharing context, instructions, or prompts alongside your code. When you copy the code below, both the code and its extra context will be included. <strong>Try pasting it into your favorite AI tool to see the result.</strong>
+        </p>
+        <template>
+            Expand this example into a 9-room text adventure game in Python. Requirements: use a main() function, implement a game loop with input validation, create separate functions for room navigation and inventory management, use dictionaries for game state, no external packages. Include only these items: 2 keys, 1 torch (for dark rooms), and 1 treasure. Add locked doors, dark rooms that require the torch, and a simple win condition when treasure is found.
+            
+            ```
+        </template>
+        <pre class="hljsl editor"><code class="python locked">
+            rooms = {'start': {'north': 'hallway'}, 'hallway': {'south': 'start'}}
+            current_room = 'start'
+            print(f"You are in the {current_room}")
+        </code></pre>
+        <template>
+            ```
+        </template>
+
         <div class="header">Examples</div>
         <p>
             If you believe in the adage <i>a picture is worth more than a thousand words</i> then the examples below are for you! Most of the following examples were copied from <a href="https://wcoder.github.io/highlightjs-line-numbers.js/" target="_blank">highlightjs line numbers</a> and is an entirely different project with no connection to HLJSL or Caboodle Tech. If you are looking to just add line numbers to your existing installation of highlight.js you probably want that project instead.

@@ -1,84 +1,9 @@
 // Updated from package.json on build.
 const Version = '???';
 
-/**
- * @class DOMWatcher
- * @description A utility class to observe and react to dynamic DOM changes using a MutationObserver.
- * This class allows you to watch for specific elements based on a selector, and call a callback
- * when those elements are added to the DOM, including any existing matching elements at the time
- * of the observation.
- *
- */
-class DOMWatcher {
-
-    constructor() {
-        this.watchers = new Map();
-        this.observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) this.checkNode(node);
-                });
-            });
-        });
-
-        this.observer.observe(document.documentElement, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    watch(selector, callback, once = true) {
-        const watchId = Symbol();
-        if (!this.watchers.has(selector)) {
-            this.watchers.set(selector, new Map());
-        }
-
-        const wrappedCallback = (element) => {
-            callback(element);
-            if (once) {
-                this.unwatch(selector, watchId);
-            }
-        };
-
-        this.watchers.get(selector).set(watchId, wrappedCallback);
-
-        // Check existing elements
-        document.querySelectorAll(selector).forEach(wrappedCallback);
-
-        return {
-            unwatch: () => this.unwatch(selector, watchId)
-        };
-    }
-
-    unwatch(selector, id) {
-        const callbacks = this.watchers.get(selector);
-        callbacks?.delete(id);
-        if (callbacks?.size === 0) {
-            this.watchers.delete(selector);
-        }
-    }
-
-    checkNode(node) {
-        if (!node.matches) return;
-
-        this.watchers.forEach((callbacks, selector) => {
-            if (node.matches(selector)) {
-                callbacks.forEach((callback) => callback(node));
-            }
-
-            // Check children
-            node.querySelectorAll(selector).forEach((elem) => {
-                callbacks.forEach((callback) => callback(elem));
-            });
-        });
-    }
-
-    disconnect() {
-        this.observer.disconnect();
-        this.watchers.clear();
-    }
-
-}
+import Editor from './editor.js';
+import DOMWatcher from './dom-watcher.js';
+import languageDetector from './language-detector.js';
 
 /**
  * @class Highlighter
@@ -92,13 +17,14 @@ class Highlighter {
     // Consolidated regex patterns
     #regex = {
         langValidation: /^[a-zA-Z]{2}(-[a-zA-Z]{2})?$/,
-        lineBreak: /<br\s*\/?>/gi,
+        lineBreak: /(<br[^>]*>)/gi,
         openingSpan: /<span[^>]*>/,
         closingSpan: /<\/span>/
     };
 
     // Configuration and state
     #autoLoad = true;
+    #editor = new Editor();
     #hideNumbers = false;
     #ignoreElements = [];
     #lang = 'en-us';
@@ -125,6 +51,8 @@ class Highlighter {
         }
         Highlighter.#instance = this;
 
+        window.languageDetector = languageDetector;
+
         // Record the script dirname
         this.#root = scriptDirname;
 
@@ -150,17 +78,26 @@ class Highlighter {
      * @param {IntersectionObserver} observer The intersection observer instance
      */
     #blockInView(entries, observer) {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-                this.highlight(entry.target);
-                // Stop watching this block after processing
-                setTimeout(() => {
-                    if (entry.target.hasAttribute('data-hljsl-id') && !entry.target.hasAttribute('data-unprocessed')) {
-                        observer.disconnect();
-                    }
-                }, 500);
-            }
+        // Process all intersecting entries at once
+        const intersectingEntries = entries.filter((entry) => entry.isIntersecting);
+
+        // Process highlighting as quickly as possible
+        intersectingEntries.forEach((entry) => {
+            this.highlight(entry.target);
         });
+
+        // Batch the observer disconnection for better performance
+        if (intersectingEntries.length > 0) {
+            // Use a single timeout for all processed entries
+            requestAnimationFrame(() => {
+                intersectingEntries.forEach((entry) => {
+                    if (entry.target.hasAttribute('data-hljsl-id') &&
+                        !entry.target.hasAttribute('data-unprocessed')) {
+                        observer.unobserve(entry.target);
+                    }
+                });
+            });
+        }
     }
 
     /**
@@ -194,15 +131,62 @@ class Highlighter {
      * @param {HTMLElement} evt The event that triggered this function
      */
     #copyToClipboard(evt) {
-        // Only process this event if we can find the table with the code to copy
-        let elem = evt.target;
-        while (elem && elem.nodeName !== 'CODE' && elem.nodeName !== 'PRE') {
-            elem = elem.parentElement;
+        let button = evt.currentTarget || evt.target;
+        if (button.nodeName !== 'BUTTON') {
+            button = button.closest('button');
         }
-        if (!elem) return;
+        if (!button) return;
 
-        const button = elem.querySelector('button.hljsl-clipboard');
-        const table = elem.querySelector('table');
+        // Only process this event if we can find the table with the code to copy
+        let pre = button.closest('code, pre');
+        if (!pre) {
+            pre = button.closest('div');
+            if (!pre) return;
+
+            pre = pre.nextElementSibling;
+            if (!pre || pre.nodeName !== 'PRE') return;
+        };
+
+        // Helper function to remove common leading whitespace
+        function dedent(text) {
+            const lines = text.split('\n');
+            const nonEmptyLines = lines.filter((line) => line.trim());
+            if (nonEmptyLines.length === 0) return text;
+
+            const minIndent = Math.min(...nonEmptyLines.map((line) => {
+                const match = line.match(/^[ \t]*/);
+                return match ? match[0].length : 0;
+            }));
+
+            return lines.map((line) => line.slice(minIndent)).join('\n');
+        }
+
+        let preText = '';
+        let postText = '';
+        if (pre.classList.contains('editor')) {
+        // Check for preText (template before pre)
+            const prev = pre.previousElementSibling;
+            if (prev && prev.previousElementSibling) {
+                if (prev.previousElementSibling.nodeName === 'TEMPLATE') {
+                    let rawText = prev.previousElementSibling.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
+                    rawText = dedent(rawText);
+                    if (rawText) {
+                        preText = rawText;
+                    }
+                }
+            }
+            // Check for postText (template after pre)
+            const next = pre.nextElementSibling;
+            if (next && next.nodeName === 'TEMPLATE') {
+                let rawText = next.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
+                rawText = dedent(rawText);
+                if (rawText) {
+                    postText = `\n${rawText}`;
+                }
+            }
+        }
+
+        const table = pre.querySelector('table');
         if (!table || !button) return;
 
         // Visually show the table is being copied
@@ -222,7 +206,8 @@ class Highlighter {
             tmpDiv.textContent += `${cell.textContent}\n`;
         });
 
-        navigator.clipboard.writeText(tmpDiv.textContent.trimEnd())
+        const fullText = `${preText}${tmpDiv.textContent.trimEnd()}${postText}`;
+        navigator.clipboard.writeText(fullText)
             .catch((error) => {
                 console.error('Failed to copy text to clipboard:', error);
             });
@@ -280,45 +265,41 @@ class Highlighter {
             }
         }
 
-        // Remove empty lines from start and end
+        // Process all lines in a single pass
         let startIndex = 0;
         let endIndex = lines.length - 1;
+        let minIndent = Infinity;
 
-        while (startIndex < lines.length && lines[startIndex].trim() === '') {
-            startIndex += 1;
-        }
-        while (endIndex >= 0 && lines[endIndex].trim() === '') {
-            endIndex -= 1;
+        // Find bounds and minimum indent in a single pass
+        for (let i = 0; i < lines.length; i++) {
+            const trimmed = lines[i].trim();
+
+            // Skip empty lines at the start
+            if (trimmed === '' && i === startIndex) {
+                startIndex++;
+                continue;
+            }
+
+            // Track last non-empty line
+            if (trimmed !== '') {
+                endIndex = i;
+                // Calculate indent in the same loop
+                const indent = lines[i].length - trimmed.length;
+                if (indent < minIndent) minIndent = indent;
+            }
         }
 
-        // Extract the relevant lines
-        const processedLines = lines.slice(startIndex, endIndex + 1);
+        // Safety check
+        minIndent = minIndent === Infinity ? 0 : minIndent;
+
+        // Extract and process lines in one go
+        const processedLines = lines.slice(startIndex, endIndex + 1).map((line) =>
+            (line.trim() === '' ? '' : line.substring(minIndent))
+        );
 
         if (processedLines.length === 0) {
             processedLines.push('');
         }
-
-        // Find the minimum indentation across all non-empty lines
-        let minIndent = Infinity;
-        for (const line of processedLines) {
-            if (line.trim() === '') continue;
-            const match = line.match(/^\s*/);
-            if (match) {
-                minIndent = Math.min(minIndent, match[0].length);
-            }
-        }
-        minIndent = minIndent === Infinity ? 0 : minIndent;
-
-        // Remove the common indentation from all lines
-        processedLines.forEach((line, i) => {
-            if (line.trim() === '') {
-                processedLines[i] = '';
-            } else {
-                const match = line.match(/^\s*/);
-                const currentIndent = match ? match[0].length : 0;
-                processedLines[i] = line.substring(Math.min(currentIndent, minIndent));
-            }
-        });
 
         // Apply the processed content while preserving HTML entities
         code.innerHTML = processedLines.join('\n').trimEnd();
@@ -413,40 +394,72 @@ class Highlighter {
             return;
         }
 
+        // Ensure elem is a <code> element or find a suitable one
+        if (elem.nodeName.toLowerCase() !== 'code') {
+            const codeChild = elem.querySelector('code');
+            if (codeChild) {
+                elem = codeChild;
+            } else {
+                const codeParent = elem.closest('code');
+                if (codeParent) {
+                    elem = codeParent;
+                } else {
+                    // No <code> element found; bail
+                    return;
+                }
+            }
+        }
+
         if (this.#hideNumbers) {
             elem.classList.add('hide-numbers');
         }
-
-        elem = this.#correctPadding(elem);
 
         if (!this.isConnected()) {
             this.connect();
         }
 
-        if (elem.hasAttribute('data-hljsl-id') && !elem.hasAttribute('data-unprocessed')) return;
+        if (elem.hasAttribute('data-hljsl-id') && elem.hasAttribute('data-unprocessed')) return;
 
-        if (this.#hideNumbers) {
-            elem.parentElement.classList.add('hide-numbers');
+        // If elem contains a table, handle it differently
+        let innerText = '';
+        if (elem.querySelector('table')) {
+            const cells = elem.querySelectorAll('table tr td:nth-child(2)');
+            innerText = Array.from(cells).map((cell) => cell.textContent).join('\n');
+        } else {
+            elem = this.#correctPadding(elem);
+            elem.classList.add('hljs');
+            elem.dataset.hljslId = this.createId();
+            elem.dataset.unprocessed = 'true';
+            innerText = this.#getTrueInnerText(elem);
         }
 
-        elem = this.#correctPadding(elem);
-        elem.classList.add('hljs');
-        elem.dataset.hljslId = this.createId();
-        elem.dataset.unprocessed = 'true';
+        // Check if element should be treated as an editor
+        let editor = false;
+        if (elem.classList.contains('editor') || elem.parentElement.classList.contains('editor')) {
+            editor = true;
+        }
+
+        // Check if language should be locked; used for code editor mode
+        let locked = false;
+        if (elem.classList.contains('locked')) {
+            locked = true;
+        }
 
         const msg = {
-            code: this.#getTrueInnerText(elem),
+            code: innerText,
             codeLang: elem.classList.toString(),
+            editor,
             id: elem.dataset.hljslId,
+            locked,
             pageLang: this.#lang
         };
 
-        this.#worker.postMessage(JSON.stringify(msg));
+        this.#worker.postMessage(msg);
 
         // Fail safe retry
         setTimeout(() => {
             if (elem.hasAttribute('data-unprocessed')) {
-                this.#worker.postMessage(JSON.stringify(msg));
+                this.#worker.postMessage(msg);
             }
         }, 3000);
     }
@@ -455,20 +468,30 @@ class Highlighter {
      * @param {HTMLElement} container Optional container to search within
      */
     highlightAll(container) {
+        // Cache selector creation for performance
+        const selector = container ? 'pre code' :
+            this.getQuerySelectorNotWithinString('pre code', this.#ignoreElements);
+
         if (!container) {
-            const selector = this.getQuerySelectorNotWithinString('pre code', this.#ignoreElements);
-            const autoProcess = this.getQuerySelectorFindAllString(this.#onlyAutoProcess);
-            document.querySelectorAll(autoProcess).forEach((elem) => {
-                elem.querySelectorAll(selector).forEach((block) => {
-                    this.highlight(block);
-                });
-            });
+            // Cache these calculations
+            const autoProcessSelector = this.getQuerySelectorFindAllString(this.#onlyAutoProcess);
+            const containers = document.querySelectorAll(autoProcessSelector);
+
+            // Process each container in batches
+            for (let i = 0; i < containers.length; i++) {
+                const blocks = containers[i].querySelectorAll(selector);
+                for (let j = 0; j < blocks.length; j++) {
+                    this.highlight(blocks[j]);
+                }
+            }
             return;
         }
 
-        container.querySelectorAll('pre code').forEach((block) => {
-            this.highlight(block);
-        });
+        // Process direct container
+        const blocks = container.querySelectorAll(selector);
+        for (let i = 0; i < blocks.length; i++) {
+            this.highlight(blocks[i]);
+        }
     }
 
     /**
@@ -573,15 +596,26 @@ class Highlighter {
      * @param {MessageEvent} evt Response from web worker
      */
     #receiveResponse(evt) {
-        const msg = JSON.parse(evt.data);
+        const msg = evt.data;
         const elem = document.querySelector(`[data-hljsl-id="${msg.id}"]`);
 
         if (!elem) return;
 
+        const pre = elem.closest('pre');
+        if (!pre) return;
+
         elem.removeAttribute('data-unprocessed');
+        elem.classList.forEach((cls) => {
+            if (cls.startsWith('language-')) {
+                elem.classList.remove(cls);
+            }
+        });
 
         if (msg.language) {
-            // Only when an error occurred will the language be a string of languages
+            /**
+             * Language will always be a string but if isbl was detected or an
+             * error occurred it will be a comma separated list of languages.
+             */
             msg.language.split(',').forEach((lang) => {
                 elem.classList.add(`language-${lang.trim()}`);
             });
@@ -591,14 +625,24 @@ class Highlighter {
             elem.classList.add('hide-numbers');
         }
 
-        elem.innerHTML = msg.code.trim();
+        if (pre.classList.contains('editor')) {
+            pre.dataset.displayLanguage = msg.displayLanguage;
+            this.#editor.deactivateEditor(pre);
+        }
+
+        // In editor mode, don't trim to preserve user's whitespace
+        elem.innerHTML = msg.editor ? msg.code : msg.code.trim();
         elem.parentElement.classList.add('hljsl');
         elem.classList.add('hljs');
         elem.parentElement.innerHTML = elem.outerHTML.trim();
 
-        const button = document.querySelector(`[data-hljsl-id="${msg.id}"] button.hljsl-clipboard`);
+        const button = pre.querySelector('button.hljsl-clipboard');
         button.addEventListener('click', this.#copyToClipboard);
         button.addEventListener('keydown', this.#copyToClipboard);
+
+        if (pre.classList.contains('editor')) {
+            this.#editor.activateEditor(pre);
+        }
     }
 
     /**

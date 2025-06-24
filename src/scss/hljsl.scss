@@ -228,6 +228,14 @@ pre.hljsl, .hljsl pre, .hljs pre {
     tr {
         width: 100%;
 
+        td:empty::before {
+            content: "\00A0"; /* Non-breaking space */
+        }
+
+        td span:empty::before {
+            content: "\00A0"; /* Non-breaking space */
+        }
+
         td:nth-child(1) {
             text-align: right;
             border-right: 1px solid var(--highlight-border);
@@ -275,6 +283,60 @@ pre.hljsl, .hljsl pre, .hljs pre {
         tr td:nth-child(2) {
             background-color: var(--highlight-copy-bg);
         }
+    }
+}
+
+pre.hljsl.editor, .hljsl pre.editor, .hljs pre.editor {
+    .hljsl-clipboard {
+        display: none;
+    }
+
+    [contenteditable] {
+        outline: none;
+
+        &:focus {
+            background: var(--highlight-copy-bg);
+            outline: none;
+        }
+    }
+}
+
+.editor-controls {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    background: var(--editor-control-bar);
+    border: 1px solid var(--highlight-border);
+    color: var(--editor-control-color);
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 1em;
+    padding: 10px;
+
+    .icon {
+        fill: var(--editor-control-svg);
+        margin-right: 7px;
+    }
+
+    .lang {
+        flex: 1;
+    }
+
+    button.hljsl-clipboard {
+        cursor: pointer;
+        background-color: var(--highlight-bg);
+        border: 1px solid var(--highlight-btn-border);
+        padding: 7px 7px 3px 7px;
+        margin: 0;
+
+        svg {
+            fill: var(--highlight-btn-fill);
+        }
+    }
+
+    + pre {
+        margin-top: 0;
+        border-top: 0;
     }
 }
 

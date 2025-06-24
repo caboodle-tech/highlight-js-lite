@@ -88,7 +88,7 @@ const buildHighlighter = async() => {
             input: item.src,
             plugins: [
                 ReplaceVersion(),
-                Terser(),
+                // Terser(),
                 LicenseHeader()
             ]
         };

@@ -4,7 +4,10 @@
      */
 
     /* light (default) theme */
-    :root {
+    html.light, html.light-mode, html.lite, html.lite-mode, :root {
+        --editor-control-bar: #2e2e2e;
+        --editor-control-svg: #e0e0e0;
+        --editor-control-color: #e0e0e0;
         --highlight-addition: #8dad98;
         --highlight-alt-bg: #e5e5e5;
         --highlight-attribute: #0177b3;
@@ -32,6 +35,9 @@
 
     /* dark theme */
     html.dark, html.dark-mode {
+        --editor-control-bar: #000000;
+        --editor-control-svg: #ffffff;
+        --editor-control-color: #ffffff;
         --highlight-addition: #76c490;
         --highlight-alt-bg: #292929;
         --highlight-attribute: #68a8e4;

@@ -1,5 +1,6 @@
 import copyToClipboardMap from './i18n.js';
-import validCodeLanguages from './languages.js';
+import languageDetector from './language-detector.js';
+import { languageCodes, languageDisplayNames } from './languages.js';
 
 /**
  * @typedef {Object} MessageData
@@ -25,10 +26,6 @@ class Webworker {
     // Private static property to hold the instance
     static #instance;
 
-    // Private fields with initialized values
-    #validLanguagesSet = new Set(validCodeLanguages);
-    #tableLines = [];
-
     // Map of HTML entities to their symbol representations
     #commonEntityMap = new Map([
         ['&lt;', { symbol: '<', regex: /&lt;/g }],
@@ -42,22 +39,22 @@ class Webworker {
     // Pre-compiled regex patterns for detecting various template syntaxes
     #possibleJsTemplate = Object.freeze([
         // EJS-style patterns
-        /(?:<|&lt;)%.*?%(?:>|&gt;)/,                    // Basic EJS
-        /(?:<|&lt;)%=.*?%(?:>|&gt;)/,                   // EJS output
-        /(?:<|&lt;)%-.*?%(?:>|&gt;)/,                   // EJS unescaped output
-        /(?:<|&lt;)%#.*?%(?:>|&gt;)/,                   // EJS comments
+        /(?:<|&lt;)%.*?%(?:>|&gt;)/,                   // Basic EJS
+        /(?:<|&lt;)%=.*?%(?:>|&gt;)/,                  // EJS output
+        /(?:<|&lt;)%-.*?%(?:>|&gt;)/,                  // EJS unescaped output
+        /(?:<|&lt;)%#.*?%(?:>|&gt;)/,                  // EJS comments
         // Handlebars/Mustache patterns
-        /\{\{.*?\}\}/,                                   // Basic interpolation
-        /\{\{#.*?\}\}.*?\{\{\/.*?\}\}/,                 // Block helpers
-        /\{\{!.*?\}\}/,                                 // Comments
-        /\{\{>.*?\}\}/,                                 // Partials
+        /\{\{.*?\}\}/,                                 // Basic interpolation
+        /\{\{#.*?\}\}.*?\{\{\/.*?\}\}/,                // Block helpers
+        /\{\{!.*?\}\}/,                                // Comments
+        /\{\{>.*?\}\}/,                                // Partials
         /\{\{#if\s+.*?\}\}.*?\{\{\/if\}\}/,            // Conditionals
         /\{\{#each\s+.*?\}\}.*?\{\{\/each\}\}/,        // Iteration
         // Other template engines
-        /\{%.*?%\}/,                                    // Nunjucks/Liquid/Twig blocks
-        /\{#.*?#\}/,                                    // Jinja2 comments
+        /\{%.*?%\}/,                                   // Nunjucks/Liquid/Twig blocks
+        /\{#.*?#\}/,                                   // Jinja2 comments
         /\{%.*?\s+.*?\s*%\}/,                          // Twig blocks
-        /(?:<|&lt;)%-.*?%(?:>|&gt;)/,                   // Pug unescaped output
+        /(?:<|&lt;)%-.*?%(?:>|&gt;)/,                  // Pug unescaped output
         /\{\{%.*?%\}\}/,                               // Twig special blocks
         // Generic patterns
         /(?:\{\{|(?:<|&lt;)%).*?for\s+.*?\s+in\s+.*?/, // Generic iteration
@@ -112,49 +109,87 @@ class Webworker {
      * Builds an HTML table with line numbers from highlighted code
      * @param {string} code The highlighted code HTML
      * @param {string} [pageLang='en'] Language code for the copy button
+     * @param {boolean} [editor=false] Whether the code is for an editor element
      * @returns {{table: string, lines: number}} Table HTML and line count
      */
-    #buildTable(code, pageLang = 'en') {
-        this.#tableLines.length = 0;
-        let openSpan = '';
-
-        const lines = code.trim().split('\n');
+    #buildTable(code, pageLang = 'en', editor = false) {
+    // In editor mode, preserve whitespace including trailing newlines
+        const lines = editor ? code.split('\n') : code.trim().split('\n');
         const copyButton = this.#buildCopyToClipboardButton(pageLang);
-        this.#tableLines.push(`${copyButton}<table class="hljsl-table"><tbody>`);
 
+        // Start building HTML
+        let html = `${copyButton}<table class="hljsl-table"><tbody>`;
+
+        let openSpan = '';
+        const openingPattern = this.#spanPatterns.opening;
+        const closingPattern = this.#spanPatterns.closing;
+
+        // Process actual code lines
         for (let i = 0; i < lines.length; i++) {
-            let modifiedLine = lines[i];
+            let line = lines[i];
 
-            // If we have an open span, prepend it
+            // Handle span continuation
             if (openSpan) {
-                modifiedLine = openSpan + modifiedLine;
+                line = openSpan + line;
             }
 
-            const openingSpanMatch = modifiedLine.match(this.#spanPatterns.opening);
-            const closingSpanMatch = modifiedLine.match(this.#spanPatterns.closing);
+            const openingMatch = line.match(openingPattern);
+            const closingMatch = line.match(closingPattern);
 
-            // Handle span tag continuation across lines
-            if (openingSpanMatch && !closingSpanMatch) {
-                [openSpan] = openingSpanMatch;
-            } else if (closingSpanMatch) {
+            if (openingMatch && !closingMatch) {
+                // eslint-disable-next-line prefer-destructuring
+                openSpan = openingMatch[0];
+            } else if (closingMatch) {
                 openSpan = '';
             }
 
             // Ensure empty lines are copyable
-            if (!modifiedLine) {
-                modifiedLine = '<span> </span>';
+            if (!line) {
+                line = '<span></span>';
             }
 
-            this.#tableLines.push(
-                `<tr><td>${i + 1}</td><td>${modifiedLine}</td></tr>`
-            );
+            html += `<tr><td>${i + 1}</td><td>${line}</td></tr>`;
         }
 
-        this.#tableLines.push('</tbody></table>');
+        /**
+         * Add extra lines for editor mode if needed
+         * @deprecated
+         * if (editor && lines.length === 1) {
+         *     html += `<tr><td>${lines.length + 1}</td><td><span></span></td></tr>`;
+         *     html += `<tr><td>${lines.length + 2}</td><td><span></span></td></tr>`;
+         * }
+         */
+
+        html += '</tbody></table>';
+
+        const totalLines = editor && lines.length === 1 ? lines.length + 2 : lines.length;
+
         return {
-            table: this.#tableLines.join('\n'),
-            lines: lines.length
+            table: html,
+            lines: totalLines
         };
+    }
+
+    /**
+     * Determine what the display language should be based on the first recognized language class
+     * @param {array} langs An array of possible code languages
+     * @param {boolean} [withKey] Should the key be returned for the matching language as well; default false
+     * @returns The language name meant for display or null if not determined
+     */
+    #getDisplayLanguage(langs, withKey = false) {
+        for (let lang of langs) {
+            lang = lang.trim();
+            if (languageDisplayNames.has(lang)) {
+                if (withKey) {
+                    return { key: lang, val: languageDisplayNames.get(lang) };
+                }
+                return languageDisplayNames.get(lang);
+            }
+        }
+        if (withKey) {
+            return { key: null, val: null };
+        }
+        return null;
     }
 
     /**
@@ -162,11 +197,17 @@ class Webworker {
      * @param {MessageEvent<string>} evt The message event containing the code
      */
     #onMessage(evt) {
-        const msg = JSON.parse(evt.data);
-        const { id, pageLang, code } = msg;
-        const codeLang = this.#processLanguages(msg.codeLang, code);
-        try {
+        const msg = evt.data;
+        const { id, pageLang, code, editor, locked } = msg;
+        let codeLang = this.#processLanguages(msg.codeLang, code);
+        let displayLanguage = this.#getDisplayLanguage(codeLang); // Preset in case an error occurs
 
+        if (editor && !locked) {
+            codeLang = languageDetector.detect(code, { bias: codeLang });
+            displayLanguage = null;
+        }
+
+        try {
             const preprocessedCode = this.#preprocessCode(code);
             let result = this.#highlightCode(preprocessedCode, codeLang);
 
@@ -175,22 +216,75 @@ class Webworker {
                 result = result.secondBest;
             }
 
-            const { table, lines } = this.#buildTable(result.value, pageLang);
+            const { table, lines } = this.#buildTable(result.value, pageLang, editor);
 
-            self.postMessage(JSON.stringify({
+            // Correct common edge-case in language detection; we usually want python in this case
+            if (result.language === 'isbl') {
+                result.language = 'python, isbl';
+            }
+
+            // We highlight HTML as Django, correct this so the display language shows HTML still
+            if (codeLang[0] && codeLang[0] === 'django') {
+                codeLang.unshift('html');
+            }
+
+            let languageKey = '';
+
+            // Determine language key and display value based on locked status
+            if (locked && codeLang[0] && languageDisplayNames.has(codeLang[0])) {
+            // Case 1: Locked with valid language in codeLang[0]
+                displayLanguage = languageDisplayNames.get(codeLang[0]);
+                // eslint-disable-next-line prefer-destructuring
+                languageKey = codeLang[0];
+            } else if (locked) {
+            // Case 2: Locked but need to get display language; this will now be the locked language
+                const langData = this.#getDisplayLanguage(codeLang, true);
+                displayLanguage = langData.val;
+                languageKey = langData.key;
+            } else if (code === null || code === undefined || code.trim() === '') {
+            // Case 3: Empty code, default to plaintext
+                displayLanguage = ['Plaintext'];
+                languageKey = 'plaintext';
+            } else {
+            // Case 4: Not locked
+                const langData = this.#getDisplayLanguage(result.language.split(','), true);
+                displayLanguage = langData.val;
+                languageKey = langData.key;
+            }
+
+            // Set the result language after determining the correct value
+            result.language = languageKey;
+
+            self.postMessage({
                 code: table,
                 id,
+                displayLanguage,
                 language: result.language,
-                lines
-            }));
+                lines,
+                locked,
+                editor // Pass editor flag back so highlighter knows not to trim
+            });
         } catch (error) {
-            console.error('Message processing failed:', error);
-            self.postMessage(JSON.stringify({
-                code: msg,
+            const copyButton = this.#buildCopyToClipboardButton(pageLang);
+            const table = `
+            ${copyButton}<table class="hljsl-table">
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>${error}</td>
+                    </tr>
+                </tbody>
+            </table>`;
+
+            self.postMessage({
+                code: table,
                 id,
+                displayLanguage,
                 language: codeLang.join(','),
-                lines: msg.split('\n').length
-            }));
+                lines: error.toString().split('\n').length,
+                locked,
+                editor
+            });
         }
     }
 
@@ -202,7 +296,12 @@ class Webworker {
      */
     #processLanguages(codeLang, code) {
         let langs = codeLang.toLowerCase().split(' ')
-            .filter((value) => this.#validLanguagesSet.has(value));
+            .filter((value) => languageCodes.has(value));
+
+        // If no languages were specified, try to detect them
+        if (langs.length === 0) {
+            return [];
+        }
 
         // Help highlight languages that are commonly broken during the highlighting process
         if (langs.includes('css')) {
@@ -259,6 +358,8 @@ class Webworker {
      * Helps with language detection by mapping variant names
      */
     #registerAliases() {
+        self.hljs.registerAliases(['md'], { languageName: 'markdown' });
+        self.hljs.registerAliases(['py'], { languageName: 'python' });
         self.hljs.registerAliases(['vim-script'], { languageName: 'vim' });
         self.hljs.registerAliases(
             ['php5', 'php6', 'php7', 'php8', 'php9'],
