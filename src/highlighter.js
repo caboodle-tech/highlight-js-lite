@@ -16,10 +16,11 @@ class Highlighter {
 
     // Consolidated regex patterns
     #regex = {
+        closingSpan: /<\/span>/,
         langValidation: /^[a-zA-Z]{2}(-[a-zA-Z]{2})?$/,
+        leadingWhitespace: /^\s*/,
         lineBreak: /(<br[^>]*>)/gi,
-        openingSpan: /<span[^>]*>/,
-        closingSpan: /<\/span>/
+        openingSpan: /<span[^>]*>/
     };
 
     // Configuration and state
@@ -147,7 +148,11 @@ class Highlighter {
             if (!pre || pre.nodeName !== 'PRE') return;
         };
 
-        // Helper function to remove common leading whitespace
+        /**
+         * Helper function to dedent a block of text by removing the common leading whitespace.
+         * @param {string} text The text to dedent
+         * @returns {string} The dedented text
+         */
         function dedent(text) {
             const lines = text.split('\n');
             const nonEmptyLines = lines.filter((line) => line.trim());
@@ -164,14 +169,14 @@ class Highlighter {
         let preText = '';
         let postText = '';
         if (pre.classList.contains('editor')) {
-        // Check for preText (template before pre)
+            // Check for preText (template before pre)
             const prev = pre.previousElementSibling;
             if (prev && prev.previousElementSibling) {
                 if (prev.previousElementSibling.nodeName === 'TEMPLATE') {
                     let rawText = prev.previousElementSibling.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
                     rawText = dedent(rawText);
                     if (rawText) {
-                        preText = rawText;
+                        preText = rawText.replace(/\\n/g, '\n');
                     }
                 }
             }
@@ -181,7 +186,7 @@ class Highlighter {
                 let rawText = next.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
                 rawText = dedent(rawText);
                 if (rawText) {
-                    postText = `\n${rawText}`;
+                    postText = `\n${rawText.replace(/\\n/g, '\n')}`;
                 }
             }
         }
@@ -258,9 +263,9 @@ class Highlighter {
 
         // Handle first line edge case when it's on the same line as the code tag
         if (lines.length > 1 && lines[0].trim() !== '') {
-            const firstLineIndent = lines[0].match(/^\s*/)[0].length;
+            const firstLineIndent = lines[0].match(this.#regex.leadingWhitespace)[0].length;
             if (firstLineIndent === 0) {
-                const secondLineIndent = lines[1].match(/^\s*/)[0].length;
+                const secondLineIndent = lines[1].match(this.#regex.leadingWhitespace)[0].length;
                 lines[0] = ' '.repeat(secondLineIndent) + lines[0];
             }
         }
@@ -276,7 +281,7 @@ class Highlighter {
 
             // Skip empty lines at the start
             if (trimmed === '' && i === startIndex) {
-                startIndex++;
+                startIndex += 1;
                 continue;
             }
 
@@ -294,6 +299,7 @@ class Highlighter {
 
         // Extract and process lines in one go
         const processedLines = lines.slice(startIndex, endIndex + 1).map((line) =>
+            // eslint-disable-next-line no-extra-parens
             (line.trim() === '' ? '' : line.substring(minIndent))
         );
 
@@ -435,7 +441,7 @@ class Highlighter {
 
         // Check if element should be treated as an editor
         let editor = false;
-        if (elem.classList.contains('editor') || elem.parentElement.classList.contains('editor')) {
+        if (elem?.classList?.contains('editor') || elem.parentElement?.classList?.contains('editor')) {
             editor = true;
         }
 
