@@ -186,7 +186,7 @@ class Highlighter {
                 let rawText = next.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
                 rawText = dedent(rawText);
                 if (rawText) {
-                    postText = `\n${rawText.replace(/\\n/g, '\n')}`;
+                    postText = `\n\n${rawText.replace(/\\n/g, '\n')}`;
                 }
             }
         }
