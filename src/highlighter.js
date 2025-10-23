@@ -166,30 +166,100 @@ class Highlighter {
             return lines.map((line) => line.slice(minIndent)).join('\n');
         }
 
-        let preText = '';
-        let postText = '';
-        if (pre.classList.contains('editor')) {
-            // Check for preText (template before pre)
-            const prev = pre.previousElementSibling;
-            if (prev && prev.previousElementSibling) {
-                if (prev.previousElementSibling.nodeName === 'TEMPLATE') {
-                    let rawText = prev.previousElementSibling.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
-                    rawText = dedent(rawText);
-                    if (rawText) {
-                        preText = rawText.replace(/\\n/g, '\n');
+        function getBlockTemplates(pre) {
+            let preText = '';
+            let postText = '';
+
+            // Find the preceding template
+            // Walk backwards from pre, skipping over .editor-controls
+            let prevElement = pre.previousElementSibling;
+
+            // Skip past .editor-controls to find potential template
+            if (prevElement?.classList.contains('editor-controls')) {
+                prevElement = prevElement.previousElementSibling;
+            }
+
+            // If we found a template, it belongs to this pre
+            if (prevElement?.nodeName === 'TEMPLATE') {
+                const content = prevElement.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
+                if (content.trim()) {
+                    preText = `${dedent(content)}\n`;
+                }
+            }
+
+            /**
+             * A template after pre could belong to:
+             * 1. This pre (if nothing follows)
+             * 2. The next pre (if there's another editor block coming)
+             */
+
+            let nextElement = pre.nextElementSibling;
+
+            // Skip past any immediate non-template elements (like remaining controls)
+            while (nextElement &&
+           nextElement.nodeName !== 'TEMPLATE' &&
+           nextElement.nodeName !== 'PRE' &&
+           !nextElement.classList.contains('editor-controls')) {
+                nextElement = nextElement.nextElementSibling;
+            }
+
+            // If we hit a template, check what comes after it
+            if (nextElement?.nodeName === 'TEMPLATE') {
+                const templateElement = nextElement;
+                const afterTemplate = templateElement.nextElementSibling;
+
+                // Check if there's an editor-controls + pre combo after this template
+                // If so, the template belongs to the NEXT block, not this one
+                if (afterTemplate?.classList.contains('editor-controls')) {
+                    const potentialPre = afterTemplate.nextElementSibling;
+                    if (potentialPre?.nodeName === 'PRE' && potentialPre.classList.contains('editor')) {
+                        // Template belongs to next block, don't assign it to postText
+                        return { preText, postText };
                     }
                 }
-            }
-            // Check for postText (template after pre)
-            const next = pre.nextElementSibling;
-            if (next && next.nodeName === 'TEMPLATE') {
-                let rawText = next.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
-                rawText = dedent(rawText);
-                if (rawText) {
-                    postText = `\n\n${rawText.replace(/\\n/g, '\n')}`;
+
+                // Check if there's a pre directly after the template
+                if (afterTemplate?.nodeName === 'PRE' && afterTemplate.classList.contains('editor')) {
+                    // Template belongs to next block
+                    return { preText, postText };
+                }
+
+                // Otherwise, this template belongs to the current pre
+                const content = templateElement.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
+                if (content.trim()) {
+                    postText = `\n\n${dedent(content)}`;
                 }
             }
+
+            return { preText, postText };
         }
+
+        const { preText, postText } = getBlockTemplates(pre);
+
+        // let preText = '';
+        // let postText = '';
+        // if (pre.classList.contains('editor')) {
+        //     // Check for preText (template before pre)
+        //     const prev = pre.previousElementSibling;
+        //     if (prev && prev.previousElementSibling) {
+        //         if (prev.previousElementSibling.nodeName === 'TEMPLATE') {
+        //             let rawText = prev.previousElementSibling.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
+        //             rawText = dedent(rawText);
+        //             if (rawText) {
+        //                 preText = `${rawText.replace(/\\n/g, '\n')}\n`;
+        //             }
+        //         }
+        //     }
+        //     // Check for postText (template after pre)
+        //     const next = pre.nextElementSibling;
+        //     if (next && next.nodeName === 'TEMPLATE') {
+        //         let rawText = next.innerHTML.replace(/^\n/, '').replace(/\n$/, '');
+        //         rawText = dedent(rawText);
+        //         if (rawText) {
+        //             postText = `\n\n${rawText.replace(/\\n/g, '\n')}`;
+        //         }
+        //     }
+        // }
 
         const table = pre.querySelector('table');
         if (!table || !button) return;
@@ -223,10 +293,10 @@ class Highlighter {
      * @returns {HTMLElement} The processed code element
      */
     #correctPadding(elem) {
-        // Don't waste time reprocessing a block
+    // Don't waste time reprocessing a block
         if (elem.classList.contains('fixed-padding') ||
-            elem.parentElement.classList.contains('fixed-padding') ||
-            elem.querySelector('fixed-padding')
+        elem.parentElement.classList.contains('fixed-padding') ||
+        elem.querySelector('.fixed-padding')
         ) return elem;
 
         // Enforce proper <pre><code> structure
@@ -258,8 +328,8 @@ class Highlighter {
             elem.parentElement.removeChild(elem);
         }
 
-        // Use innerHTML to preserve HTML entities when splitting into lines
-        const lines = code.innerHTML.split('\n');
+        // Use textContent to get the actual decoded text for processing
+        const lines = code.textContent.split('\n');
 
         // Handle first line edge case when it's on the same line as the code tag
         if (lines.length > 1 && lines[0].trim() !== '') {
@@ -288,8 +358,9 @@ class Highlighter {
             // Track last non-empty line
             if (trimmed !== '') {
                 endIndex = i;
-                // Calculate indent in the same loop
-                const indent = lines[i].length - trimmed.length;
+                // Calculate indent using actual whitespace characters
+                const leadingWhitespace = lines[i].match(this.#regex.leadingWhitespace);
+                const indent = leadingWhitespace ? leadingWhitespace[0].length : 0;
                 if (indent < minIndent) minIndent = indent;
             }
         }
@@ -298,22 +369,21 @@ class Highlighter {
         minIndent = minIndent === Infinity ? 0 : minIndent;
 
         // Extract and process lines in one go
-        const processedLines = lines.slice(startIndex, endIndex + 1).map((line) =>
-            // eslint-disable-next-line no-extra-parens
-            (line.trim() === '' ? '' : line.substring(minIndent))
-        );
+        const processedLines = lines.slice(startIndex, endIndex + 1).map((line) => {
+            if (line.trim() === '') return '';
+            return line.substring(minIndent);
+        });
 
         if (processedLines.length === 0) {
             processedLines.push('');
         }
 
-        // Apply the processed content while preserving HTML entities
-        code.innerHTML = processedLines.join('\n').trimEnd();
+        // Apply the processed content - textContent will auto-encode HTML entities
+        code.textContent = processedLines.join('\n').trimEnd();
         code.classList.add('fixed-padding');
 
         // Clean up any extra whitespace in the pre tag
         pre.innerHTML = pre.innerHTML.trim();
-
         return pre.firstElementChild;
     }
 
