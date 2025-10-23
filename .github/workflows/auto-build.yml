@@ -21,10 +21,10 @@ jobs:
         with:
           version: 9
 
-      - name: Use Node.js 20.11.0
+      - name: Use Node.js 22.13.1
         uses: actions/setup-node@v4
         with:
-          node-version: '20.11.0'  # Explicitly set to Node.js 20.11.0 to match local environment
+          node-version: '22.13.1'  # Explicitly set to Node.js 20.11.0 to match local environment
           cache: 'pnpm'
       
       - name: Install dependencies
