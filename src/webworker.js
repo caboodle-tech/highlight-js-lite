@@ -211,9 +211,6 @@ class Webworker {
             const preprocessedCode = this.#preprocessCode(code);
             let result = this.#highlightCode(preprocessedCode, codeLang);
 
-            console.log('Original code', code);
-            console.log('Preprocessed code', preprocessedCode);
-
             // If no language was detected try the second best
             if (!result.language && result?.secondBest?.language) {
                 result = result.secondBest;

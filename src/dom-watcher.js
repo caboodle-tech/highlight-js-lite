@@ -1,9 +1,36 @@
 /**
  * @class DOMWatcher
- * @description A utility class to observe and react to dynamic DOM changes using a MutationObserver.
- * This class allows you to watch for specific elements based on a selector, and call a callback
- * when those elements are added to the DOM, including any existing matching elements at the time
- * of the observation.
+ * Observes the DOM for elements matching CSS selectors
+ *
+ * Monitors the DOM tree for elements that match specified selectors, triggering
+ * callbacks when matching elements are added. Handles both immediate detection
+ * of existing elements and observation of future additions.
+ *
+ * @example
+ * // Create a watcher instance
+ * const watcher = new DOMWatcher();
+ *
+ * // Watch for elements (triggers once per element)
+ * watcher.watch('.my-element', (element) => {
+ *     console.log('Found element:', element);
+ * });
+ *
+ * // Watch continuously (callback fires for every match)
+ * watcher.watch('.my-element', (element) => {
+ *     console.log('Found element:', element);
+ * }, false);
+ *
+ * // Watch with timeout (auto-unwatch after 5 seconds)
+ * watcher.watch('.my-element', (element) => {
+ *     console.log('Found element:', element);
+ * }, 5000);
+ *
+ * // Manual unwatching
+ * const { unwatch } = watcher.watch('.my-element', callback);
+ * unwatch(); // Stop watching
+ *
+ * // Clean up when done
+ * watcher.disconnect();
  */
 class DOMWatcher {
 

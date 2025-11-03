@@ -10,19 +10,34 @@ class EditableHighlightJS {
         this.debounceTimers = new Map();
         this.debounceDelay = options.debounceDelay || 500;
         this.editors = new Set();
-        this.multiline = false;
         this.tabSize = options.tabSize || 4;
         this.tabString = ' '.repeat(this.tabSize);
         this.suppressHighlighting = false;
-        this.pendingOperations = new Set();
-        this.typingAfterSelection = false;
+        this.pendingOperations = new Map(); // Change to Map to track timeouts
+        this.pendingOperationTimeouts = new Map();
+
+        // State machine - replaces multiline and typingAfterSelection flags
+        this.EditorState = {
+            IDLE: 'idle',
+            MULTILINE: 'multiline',
+            TYPING_AFTER_SELECTION: 'typing_after_selection'
+        };
+        this.currentState = this.EditorState.IDLE;
+        this.stateTimeout = null;
 
         // History system
         this.history = new Map();
         this.maxHistorySize = options.maxHistorySize || 50;
-        this.historyDebounceDelay = options.historyDebounceDelay || 2500;
+        this.historyDebounceDelay = options.historyDebounceDelay || 3500;
         this.historyTimers = new Map();
-        this.minChangeThreshold = options.minChangeThreshold || 5; // Minimum characters changed
+        this.minChangeThreshold = options.minChangeThreshold || 10; // Minimum characters changed
+
+        // Store bound handlers for proper cleanup
+        this.boundHandlers = new WeakMap();
+        this.boundGlobalHandlers = {
+            multilineKeyDown: this.#handleMultilineKeyDown.bind(this),
+            historyKeyDown: this.#handleHistoryKeyDown.bind(this)
+        };
 
         this.#init();
     }
@@ -31,9 +46,39 @@ class EditableHighlightJS {
      * Initialize the editor system
      */
     #init() {
-        document.addEventListener('keydown', this.#handleMultilineKeyDown.bind(this));
-        document.addEventListener('keydown', this.#handleHistoryKeyDown.bind(this));
-        document.querySelectorAll('pre.editor').forEach((pre) => this.activateEditor(pre));
+        document.addEventListener('keydown', this.boundGlobalHandlers.multilineKeyDown);
+        document.addEventListener('keydown', this.boundGlobalHandlers.historyKeyDown);
+    }
+
+    /**
+     * Set the current editor state with automatic cleanup
+     * @param {string} state - The new state from EditorState enum
+     * @param {number} timeout - Optional timeout in ms to auto-return to IDLE
+     */
+    #setState(state, timeout = 0) {
+        // Clear any existing state timeout
+        if (this.stateTimeout) {
+            clearTimeout(this.stateTimeout);
+            this.stateTimeout = null;
+        }
+
+        this.currentState = state;
+
+        // If timeout specified, auto-return to IDLE
+        if (timeout > 0) {
+            this.stateTimeout = setTimeout(() => {
+                if (this.currentState === state) {
+                    this.currentState = this.EditorState.IDLE;
+                    this.activeEditor = null;
+                }
+                this.stateTimeout = null;
+            }, timeout);
+        }
+
+        // Clear activeEditor when returning to IDLE
+        if (state === this.EditorState.IDLE) {
+            this.activeEditor = null;
+        }
     }
 
     /**
@@ -48,6 +93,11 @@ class EditableHighlightJS {
         const table = pre.querySelector('table');
         if (!table) {
             return;
+        }
+
+        // Ensure history is initialized
+        if (!pre.dataset.editorHistory) {
+            this.#initializeHistory(pre);
         }
 
         let { displayLanguage } = pre.dataset;
@@ -82,20 +132,30 @@ class EditableHighlightJS {
         const debounceHandler = this.#createDebounceHandler(pre);
         pre._debounceHandler = debounceHandler;
 
+        // Create and store bound handlers once
+        if (!this.boundHandlers.has(table)) {
+            this.boundHandlers.set(table, {
+                keyUp: debounceHandler,
+                keyDown: this.#handleKeyDown.bind(this),
+                mouseDown: this.#handleMouseDown.bind(this),
+                paste: this.#handlePastedContent.bind(this),
+                mouseUp: this.#handleMouseUp.bind(this)
+            });
+        }
+
+        const handlers = this.boundHandlers.get(table);
         this.editors.add(pre);
-        table.addEventListener('keyup', debounceHandler);
-        table.addEventListener('keydown', this.#handleKeyDown.bind(this));
-        table.addEventListener('mousedown', this.#handleMouseDown.bind(this));
-        table.addEventListener('paste', this.#handlePastedContent.bind(this));
-        table.addEventListener('mouseup', this.#handleMouseUp.bind(this));
+        table.addEventListener('keyup', handlers.keyUp);
+        table.addEventListener('keydown', handlers.keyDown);
+        table.addEventListener('mousedown', handlers.mouseDown);
+        table.addEventListener('paste', handlers.paste);
+        table.addEventListener('mouseup', handlers.mouseUp);
 
         // Make the second column editable
         for (const row of table.rows) {
             const codeCell = row.cells[1];
             if (codeCell) codeCell.contentEditable = true;
         }
-
-        this.#initializeHistory(pre);
     }
 
     /**
@@ -105,7 +165,7 @@ class EditableHighlightJS {
      */
     #createDebounceHandler(pre) {
         return (event) => {
-            if (this.suppressHighlighting || this.multiline || this.pendingOperations.size > 0 || this.typingAfterSelection) {
+            if (this.suppressHighlighting || this.currentState !== this.EditorState.IDLE || this.pendingOperations.size > 0) {
                 return;
             }
 
@@ -133,8 +193,10 @@ class EditableHighlightJS {
             }
 
             const timerId = setTimeout(() => {
-                if (!this.suppressHighlighting && !this.multiline && this.pendingOperations.size === 0) {
+                if (!this.suppressHighlighting && this.currentState === this.EditorState.IDLE && this.pendingOperations.size === 0) {
                     this.updateEditor(pre);
+                    // Save to history after typing (debounced)
+                    this.#saveToHistory(pre, false, false);
                 }
                 this.debounceTimers.delete(pre);
             }, this.debounceDelay);
@@ -173,10 +235,12 @@ class EditableHighlightJS {
      * @param {string} operationId - Unique operation identifier
      */
     addPendingOperation(operationId) {
-        this.pendingOperations.add(operationId);
-        setTimeout(() => {
+        this.pendingOperations.set(operationId, Date.now());
+        const timeoutId = setTimeout(() => {
             this.pendingOperations.delete(operationId);
+            this.pendingOperationTimeouts.delete(operationId);
         }, 2000);
+        this.pendingOperationTimeouts.set(operationId, timeoutId);
     }
 
     /**
@@ -185,6 +249,11 @@ class EditableHighlightJS {
      */
     removePendingOperation(operationId) {
         this.pendingOperations.delete(operationId);
+        const timeoutId = this.pendingOperationTimeouts.get(operationId);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            this.pendingOperationTimeouts.delete(operationId);
+        }
     }
 
     /**
@@ -192,35 +261,32 @@ class EditableHighlightJS {
      * @param {HTMLElement} pre - The pre element
      */
     #initializeHistory(pre) {
-        const editorId = pre.dataset.hljslId || this.createId();
-        if (!pre.dataset.hljslId) {
-            pre.dataset.hljslId = editorId;
+        const editorId = pre.dataset.editorHistory || this.createId();
+
+        if (this.history.has(editorId)) {
+            return;
         }
 
-        if (!this.history.has(editorId)) {
-            this.history.set(editorId, {
-                states: [],
-                currentIndex: -1
-            });
+        pre.dataset.editorHistory = editorId;
+        this.history.set(editorId, { states: [], currentIndex: -1 });
 
-            // Create initial state with cursor at end
-            const table = pre.querySelector('table');
-            const lines = Array.from(table.rows).map((row) => row.cells[1].textContent);
-            const lastRowIndex = lines.length - 1;
-            const lastLineLength = lines[lastRowIndex] ? lines[lastRowIndex].length : 0;
+        // Create initial state with cursor at end
+        const table = pre.querySelector('table');
+        const lines = Array.from(table.rows).map((row) => row.cells[1].textContent);
+        const lastRowIndex = lines.length - 1;
+        const lastLineLength = lines[lastRowIndex] ? lines[lastRowIndex].length : 0;
 
-            const initialState = {
-                lines,
-                cursorPosition: {
-                    rowIndex: lastRowIndex,
-                    columnPosition: lastLineLength
-                },
-                timestamp: Date.now()
-            };
+        const initialState = {
+            lines,
+            cursorPosition: {
+                rowIndex: lastRowIndex,
+                columnPosition: lastLineLength
+            },
+            timestamp: Date.now()
+        };
 
-            this.history.get(editorId).states.push(initialState);
-            this.history.get(editorId).currentIndex = 0;
-        }
+        this.history.get(editorId).states.push(initialState);
+        this.history.get(editorId).currentIndex = 0;
     }
 
     /**
@@ -296,17 +362,7 @@ class EditableHighlightJS {
         const text1 = state1.lines.join('\n');
         const text2 = state2.lines.join('\n');
 
-        // Simple diff calculation - count different characters
-        let changes = Math.abs(text1.length - text2.length);
-        const minLength = Math.min(text1.length, text2.length);
-
-        for (let i = 0; i < minLength; i++) {
-            if (text1[i] !== text2[i]) {
-                changes++;
-            }
-        }
-
-        return changes;
+        return Math.abs(text1.length - text2.length);
     }
 
     /**
@@ -316,7 +372,7 @@ class EditableHighlightJS {
      * @param {boolean} force - Whether to force save regardless of change threshold
      */
     #saveToHistory(pre, immediate = false, force = false) {
-        const editorId = pre.dataset.hljslId;
+        const editorId = pre.dataset.editorHistory;
         if (!editorId) return;
 
         if (immediate) {
@@ -342,18 +398,22 @@ class EditableHighlightJS {
      * @param {boolean} force - Whether to force save regardless of change threshold
      */
     #doSaveToHistory(pre, force = false) {
-        const editorId = pre.dataset.hljslId;
+        const editorId = pre.dataset.editorHistory;
+        if (!editorId) {
+            return;
+        }
         const historyData = this.history.get(editorId);
-        if (!historyData) return;
 
         const currentState = this.#getCurrentEditorState(pre);
-        if (!currentState) return;
+        if (!currentState) {
+            return;
+        }
 
         if (historyData.states.length > 0) {
             const lastState = historyData.states[historyData.currentIndex];
 
-            // Check if states are exactly equal
-            if (this.#statesEqual(currentState, lastState)) {
+            // Check if states are exactly equal (unless forced)
+            if (!force && this.#statesEqual(currentState, lastState)) {
                 return;
             }
 
@@ -372,6 +432,9 @@ class EditableHighlightJS {
 
         historyData.states.push(currentState);
         historyData.currentIndex = historyData.states.length - 1;
+
+        // Verify it's actually in the Map
+        const verifyData = this.history.get(editorId);
 
         if (historyData.states.length > this.maxHistorySize) {
             historyData.states.shift();
@@ -442,8 +505,9 @@ class EditableHighlightJS {
      * @returns {boolean} Whether undo was successful
      */
     undo(pre) {
-        const editorId = pre.dataset.hljslId;
+        const editorId = pre.dataset.editorHistory;
         const historyData = this.history.get(editorId);
+
         if (!historyData || historyData.currentIndex <= 0) {
             return false;
         }
@@ -461,8 +525,9 @@ class EditableHighlightJS {
      * @returns {boolean} Whether redo was successful
      */
     redo(pre) {
-        const editorId = pre.dataset.hljslId;
+        const editorId = pre.dataset.editorHistory;
         const historyData = this.history.get(editorId);
+
         if (!historyData || historyData.currentIndex >= historyData.states.length - 1) {
             return false;
         }
@@ -520,31 +585,35 @@ class EditableHighlightJS {
      * @param {KeyboardEvent} event - The keyboard event
      */
     #handleHistoryKeyDown(event) {
-        if ((event.ctrlKey || event.metaKey) && (event.key === 'z' || event.key === 'Z')) {
-            if (event.shiftKey || (event.ctrlKey && event.key === 'y') || (event.ctrlKey && event.key === 'Y')) {
-                event.preventDefault();
-                const activeCell = document.activeElement;
-                const pre = activeCell.closest('pre.editor');
-                if (pre) {
-                    this.redo(pre);
-                }
-            } else {
-                event.preventDefault();
-                const activeCell = document.activeElement;
-                const pre = activeCell.closest('pre.editor');
-                if (pre) {
-                    this.undo(pre);
-                }
+        // Handle Ctrl+Shift+Z or Cmd+Shift+Z for redo
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'z' || event.key === 'Z')) {
+            event.preventDefault();
+            const activeCell = document.activeElement;
+            const pre = activeCell.closest('pre.editor');
+            if (pre) {
+                this.redo(pre);
             }
             return;
         }
 
+        // Handle Ctrl+Y (or Cmd+Y) for redo
         if ((event.ctrlKey || event.metaKey) && (event.key === 'y' || event.key === 'Y')) {
             event.preventDefault();
             const activeCell = document.activeElement;
             const pre = activeCell.closest('pre.editor');
             if (pre) {
                 this.redo(pre);
+            }
+            return;
+        }
+
+        // Handle Ctrl+Z (or Cmd+Z) for undo
+        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && (event.key === 'z' || event.key === 'Z')) {
+            event.preventDefault();
+            const activeCell = document.activeElement;
+            const pre = activeCell.closest('pre.editor');
+            if (pre) {
+                this.undo(pre);
             }
             return;
         }
@@ -655,10 +724,8 @@ class EditableHighlightJS {
     #handlePastedContent(event) {
         event.preventDefault();
 
-        // Clear any multiline/selection states that might interfere
-        this.activeEditor = null;
-        this.multiline = false;
-        this.typingAfterSelection = false;
+        // Clear any state that might interfere
+        this.#setState(this.EditorState.IDLE);
 
         const operationId = `paste-${Date.now()}`;
         this.addPendingOperation(operationId);
@@ -689,156 +756,240 @@ class EditableHighlightJS {
 
         // Check if there's a selection and handle it
         const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
+        if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
             const range = selection.getRangeAt(0);
+            // There's a selection, delete it first
+            const { startContainer, endContainer, startOffset, endOffset } = range;
 
-            if (!range.collapsed) {
-                // There's a selection, delete it first
-                const { startContainer, endContainer, startOffset, endOffset } = range;
+            const startRow = startContainer.nodeType === 3 ?
+                startContainer.parentNode.closest('tr') :
+                startContainer.closest('tr');
+            const endRow = endContainer.nodeType === 3 ?
+                endContainer.parentNode.closest('tr') :
+                endContainer.closest('tr');
 
-                const startRow = startContainer.nodeType === 3 ?
-                    startContainer.parentNode.closest('tr') :
-                    startContainer.closest('tr');
-                const endRow = endContainer.nodeType === 3 ?
-                    endContainer.parentNode.closest('tr') :
-                    endContainer.closest('tr');
+            if (startRow && endRow) {
+                const rows = Array.from(table.rows);
+                const startIndex = rows.indexOf(startRow);
+                const endIndex = rows.indexOf(endRow);
 
-                if (startRow && endRow) {
-                    const rows = Array.from(table.rows);
-                    const startIndex = rows.indexOf(startRow);
-                    const endIndex = rows.indexOf(endRow);
+                const startCell = startRow.cells[1];
+                const endCell = endRow.cells[1];
 
-                    const startCell = startRow.cells[1];
-                    const endCell = endRow.cells[1];
+                // Get text before selection
+                let startCellTextBefore = '';
+                const startTextNodes = this.#getTextNodes(startCell);
+                let startNodeIdx = 0;
 
-                    // Get text before selection
-                    let startCellTextBefore = '';
-                    const startTextNodes = this.#getTextNodes(startCell);
-                    let startNodeIdx = 0;
-
-                    while (startNodeIdx < startTextNodes.length) {
-                        const node = startTextNodes[startNodeIdx];
-                        if (node === startContainer) {
-                            startCellTextBefore += node.textContent.substring(0, startOffset);
-                            break;
-                        } else {
-                            startCellTextBefore += node.textContent;
-                        }
-                        startNodeIdx += 1;
+                while (startNodeIdx < startTextNodes.length) {
+                    const node = startTextNodes[startNodeIdx];
+                    if (node === startContainer) {
+                        startCellTextBefore += node.textContent.substring(0, startOffset);
+                        break;
+                    } else {
+                        startCellTextBefore += node.textContent;
                     }
+                    startNodeIdx += 1;
+                }
 
-                    // Get text after selection
-                    let endCellTextAfter = '';
-                    const endTextNodes = this.#getTextNodes(endCell);
-                    let endNodeIdx = 0;
+                // Get text after selection
+                let endCellTextAfter = '';
+                const endTextNodes = this.#getTextNodes(endCell);
+                let endNodeIdx = 0;
 
-                    while (endNodeIdx < endTextNodes.length) {
-                        const node = endTextNodes[endNodeIdx];
-                        if (node === endContainer) {
-                            endCellTextAfter += node.textContent.substring(endOffset);
-                            endNodeIdx += 1;
-                            break;
-                        }
+                while (endNodeIdx < endTextNodes.length) {
+                    const node = endTextNodes[endNodeIdx];
+                    if (node === endContainer) {
+                        endCellTextAfter += node.textContent.substring(endOffset);
                         endNodeIdx += 1;
+                        break;
+                    }
+                    endNodeIdx += 1;
+                }
+
+                while (endNodeIdx < endTextNodes.length) {
+                    endCellTextAfter += endTextNodes[endNodeIdx].textContent;
+                    endNodeIdx += 1;
+                }
+
+                // Replace selection with pasted content
+                let lastModifiedRow = startRow; // Track the last row we actually modified
+
+                if (startIndex === endIndex) {
+                    // Single line selection
+                    const firstLine = lines.shift() || '';
+                    startCell.textContent = startCellTextBefore + firstLine;
+
+                    if (lines.length > 0) {
+                        // Multi-line paste into single line selection
+                        lines.forEach((line, index) => {
+                            const isLastLine = index === lines.length - 1;
+                            const lineContent = isLastLine ? line + endCellTextAfter : line;
+
+                            const newRow = document.createElement('tr');
+                            const lineNumCell = document.createElement('td');
+                            const contentCell = document.createElement('td');
+                            contentCell.contentEditable = true;
+                            contentCell.textContent = lineContent;
+
+                            newRow.appendChild(lineNumCell);
+                            newRow.appendChild(contentCell);
+                            lastModifiedRow.insertAdjacentElement('afterend', newRow);
+                            lastModifiedRow = newRow; // Update tracker
+                        });
+                    } else {
+                        // Single line paste into single line selection
+                        startCell.textContent += endCellTextAfter;
+                    }
+                } else {
+                    // Multi-line selection
+                    const firstLine = lines.shift() || '';
+                    startCell.textContent = startCellTextBefore + firstLine;
+
+                    // Remove rows between start and end (exclusive)
+                    for (let i = endIndex - 1; i > startIndex; i--) {
+                        rows[i].remove();
                     }
 
-                    while (endNodeIdx < endTextNodes.length) {
-                        endCellTextAfter += endTextNodes[endNodeIdx].textContent;
-                        endNodeIdx += 1;
-                    }
+                    if (lines.length > 0) {
+                        // Insert new lines
+                        lines.forEach((line, index) => {
+                            const isLastLine = index === lines.length - 1;
+                            const lineContent = isLastLine ? line + endCellTextAfter : line;
 
-                    // Replace selection with pasted content
-                    let lastModifiedRow = startRow; // Track the last row we actually modified
+                            const newRow = document.createElement('tr');
+                            const lineNumCell = document.createElement('td');
+                            const contentCell = document.createElement('td');
+                            contentCell.contentEditable = true;
+                            contentCell.textContent = lineContent;
 
-                    if (startIndex === endIndex) {
-                        // Single line selection
-                        const firstLine = lines.shift() || '';
-                        startCell.textContent = startCellTextBefore + firstLine;
+                            newRow.appendChild(lineNumCell);
+                            newRow.appendChild(contentCell);
+                            lastModifiedRow.insertAdjacentElement('afterend', newRow);
+                            lastModifiedRow = newRow; // Update tracker
+                        });
 
-                        if (lines.length > 0) {
-                            // Multi-line paste into single line selection
-                            lines.forEach((line, index) => {
-                                const isLastLine = index === lines.length - 1;
-                                const lineContent = isLastLine ? line + endCellTextAfter : line;
-
-                                const newRow = document.createElement('tr');
-                                const lineNumCell = document.createElement('td');
-                                const contentCell = document.createElement('td');
-                                contentCell.contentEditable = true;
-                                contentCell.textContent = lineContent;
-
-                                newRow.appendChild(lineNumCell);
-                                newRow.appendChild(contentCell);
-                                lastModifiedRow.insertAdjacentElement('afterend', newRow);
-                                lastModifiedRow = newRow; // Update tracker
-                            });
-                        } else {
-                            // Single line paste into single line selection
-                            startCell.textContent += endCellTextAfter;
+                        // Remove the original end row since we've incorporated its remaining text
+                        if (endRow.parentNode) {
+                            endRow.remove();
                         }
                     } else {
-                        // Multi-line selection
-                        const firstLine = lines.shift() || '';
-                        startCell.textContent = startCellTextBefore + firstLine;
-
-                        // Remove rows between start and end (exclusive)
-                        for (let i = endIndex - 1; i > startIndex; i--) {
-                            rows[i].remove();
-                        }
-
-                        if (lines.length > 0) {
-                            // Insert new lines
-                            lines.forEach((line, index) => {
-                                const isLastLine = index === lines.length - 1;
-                                const lineContent = isLastLine ? line + endCellTextAfter : line;
-
-                                const newRow = document.createElement('tr');
-                                const lineNumCell = document.createElement('td');
-                                const contentCell = document.createElement('td');
-                                contentCell.contentEditable = true;
-                                contentCell.textContent = lineContent;
-
-                                newRow.appendChild(lineNumCell);
-                                newRow.appendChild(contentCell);
-                                lastModifiedRow.insertAdjacentElement('afterend', newRow);
-                                lastModifiedRow = newRow; // Update tracker
-                            });
-
-                            // Remove the original end row since we've incorporated its remaining text
-                            if (endRow.parentNode) {
-                                endRow.remove();
-                            }
-                        } else {
-                            // No additional lines, just append remaining text to start cell
-                            startCell.textContent += endCellTextAfter;
-                            if (endRow.parentNode) {
-                                endRow.remove();
-                            }
+                        // No additional lines, just append remaining text to start cell
+                        startCell.textContent += endCellTextAfter;
+                        if (endRow.parentNode) {
+                            endRow.remove();
                         }
                     }
-
-                    this.#updateLineNumbers(table);
-
-                    // Simple: focus the actual last row we modified and position cursor
-                    // at end of pasted content (before any trailing text)
-                    const finalCell = lastModifiedRow.cells[1];
-                    if (finalCell) {
-                        finalCell.focus();
-                        const cellText = finalCell.textContent;
-                        const cursorPos = endCellTextAfter.length > 0 ?
-                            cellText.length - endCellTextAfter.length :
-                            cellText.length;
-                        this.#setCursorPosition(finalCell, cursorPos);
-                    }
-
-                    // Single highlight call after paste completion
-                    this.#completePasteOperation(pre, operationId);
-                    return;
                 }
+
+                this.#updateLineNumbers(table);
+
+                // Simple: focus the actual last row we modified and position cursor
+                // at end of pasted content (before any trailing text)
+                const finalCell = lastModifiedRow.cells[1];
+                if (finalCell) {
+                    finalCell.focus();
+                    const cellText = finalCell.textContent;
+                    const cursorPos = endCellTextAfter.length > 0 ?
+                        cellText.length - endCellTextAfter.length :
+                        cellText.length;
+                    this.#setCursorPosition(finalCell, cursorPos);
+                }
+
+                // Single highlight call after paste completion
+                this.#completePasteOperation(pre, operationId);
+                return;
             }
         }
 
-        // No selection or single cursor position - original behavior
+        // No selection, single cursor position - FIX: Insert at cursor position
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (range.collapsed && lines.length === 1) {
+                // Single line paste - insert at cursor position
+                const { startContainer, startOffset } = range;
+                const textNode = startContainer.nodeType === 3 ?
+                    startContainer :
+                    startContainer.firstChild || startContainer.appendChild(document.createTextNode(''));
+
+                const beforeText = textNode.textContent.substring(0, startOffset);
+                const afterText = textNode.textContent.substring(startOffset);
+
+                textNode.textContent = beforeText + cleanContent + afterText;
+
+                // Calculate final cursor position (after pasted content)
+                const finalCursorPosition = startOffset + cleanContent.length;
+
+                // Get row and cell info for cursor restoration after highlighting
+                const row = targetCell.closest('tr');
+                const table = targetCell.closest('table');
+                const rowIndex = Array.from(table.rows).indexOf(row);
+
+                // Position cursor after pasted content, then highlight with cursor restoration
+                this.#setCursorOffset(textNode, finalCursorPosition);
+
+                // Complete paste with cursor position saved
+                this.#completePasteOperationWithCursor(pre, operationId, rowIndex, finalCursorPosition);
+                return;
+            }
+        }
+
+        // Multi-line paste at cursor position - original behavior
+        const selection2 = window.getSelection();
+        if (selection2.rangeCount > 0) {
+            const range = selection2.getRangeAt(0);
+            const { startContainer, startOffset } = range;
+
+            // Get text before and after cursor
+            const textNode = startContainer.nodeType === 3 ?
+                startContainer :
+                startContainer.firstChild;
+
+            if (textNode && textNode.nodeType === 3) {
+                const beforeText = textNode.textContent.substring(0, startOffset);
+                const afterText = textNode.textContent.substring(startOffset);
+
+                // Set first line with text before cursor
+                const firstLine = lines.shift() || '';
+                targetCell.textContent = beforeText + firstLine;
+                let lastRow = targetCell.closest('tr');
+
+                // Add remaining lines
+                lines.forEach((line, index) => {
+                    const isLastLine = index === lines.length - 1;
+                    const lineContent = isLastLine ? line + afterText : line;
+
+                    const newRow = document.createElement('tr');
+                    const lineNumCell = document.createElement('td');
+                    const contentCell = document.createElement('td');
+                    contentCell.contentEditable = true;
+                    contentCell.textContent = lineContent;
+
+                    newRow.appendChild(lineNumCell);
+                    newRow.appendChild(contentCell);
+                    lastRow.insertAdjacentElement('afterend', newRow);
+                    lastRow = newRow;
+                });
+
+                this.#updateLineNumbers(table);
+
+                // Position cursor at end of pasted content
+                const lastCell = lastRow.cells[1];
+                if (lastCell) {
+                    lastCell.focus();
+                    const cursorPos = afterText.length > 0 ?
+                        lastCell.textContent.length - afterText.length :
+                        lastCell.textContent.length;
+                    this.#setCursorPosition(lastCell, cursorPos);
+                }
+
+                // Single highlight call after paste completion
+                this.#completePasteOperation(pre, operationId);
+                return;
+            }
+        }
+
+        // Fallback to original behavior if we can't determine cursor position
         targetCell.textContent = lines.shift();
         let lastRow = targetCell.closest('tr');
 
@@ -901,15 +1052,45 @@ class EditableHighlightJS {
     }
 
     /**
+     * Complete paste operation with cursor position restoration after highlighting
+     * @param {HTMLElement} pre - The pre element
+     * @param {string} operationId - The operation ID to remove
+     * @param {number} rowIndex - The row index where cursor should be
+     * @param {number} columnPosition - The column position where cursor should be
+     */
+    #completePasteOperationWithCursor(pre, operationId, rowIndex, columnPosition) {
+        // Use setTimeout to ensure DOM has settled
+        setTimeout(() => {
+            this.removePendingOperation(operationId);
+            // Single, definitive highlight call
+            if (window.hljsl) {
+                window.hljsl.highlight(pre);
+            }
+
+            // Restore cursor after highlighting completes
+            setTimeout(() => {
+                const table = pre.querySelector('table');
+                if (table && rowIndex >= 0 && rowIndex < table.rows.length) {
+                    const targetRow = table.rows[rowIndex];
+                    const targetCell = targetRow.cells[1];
+                    if (targetCell) {
+                        targetCell.focus();
+                        this.#setCursorPosition(targetCell, columnPosition);
+                    }
+                }
+            }, 50); // Give highlighting time to complete
+        }, 150);
+    }
+
+    /**
      * Handle keydown events
      * @param {KeyboardEvent} event - The keyboard event
      */
     #handleKeyDown(event) {
         // Exit typing mode for navigation keys
-        if (this.typingAfterSelection && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Tab', 'Enter'].includes(event.key)) {
-            this.typingAfterSelection = false;
-            this.activeEditor = null;
-            this.multiline = false;
+        if (this.currentState === this.EditorState.TYPING_AFTER_SELECTION &&
+            ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Tab', 'Enter'].includes(event.key)) {
+            this.#setState(this.EditorState.IDLE);
         }
 
         const cell = event.target;
@@ -919,13 +1100,73 @@ class EditableHighlightJS {
         if (!cell.isContentEditable) return;
 
         const selection = window.getSelection();
+        if (!selection.rangeCount) {
+            // No range - create one at the start of the cell
+            const range = document.createRange();
+            const firstNode = cell.firstChild || cell.appendChild(document.createTextNode(''));
+            range.setStart(firstNode, 0);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
         const range = selection.getRangeAt(0);
+
+        // Handle Escape key - accessibility escape hatch
+        if (event.key === 'Escape') {
+            event.preventDefault();
+
+            // Blur the current cell
+            cell.blur();
+
+            // Find next focusable element after the editor
+            const focusableElements = document.querySelectorAll(
+                'a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+            );
+            const elementsArray = Array.from(focusableElements);
+            const editorControls = pre.previousElementSibling;
+            const currentIndex = elementsArray.indexOf(editorControls);
+
+            // Focus next element, or if none found, just blur
+            if (currentIndex >= 0 && currentIndex < elementsArray.length - 1) {
+                elementsArray[currentIndex + 1].focus();
+            }
+
+            return;
+        }
 
         // Handle regular character input - this fixes the selection replacement issue
         if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
             event.preventDefault();
             this.#replaceSelection(event.key, cell, pre);
             return;
+        }
+
+        // Handle Ctrl-X (cut) for single line with selection
+        if ((event.key === 'x' || event.key === 'X') && (event.ctrlKey || event.metaKey)) {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0 && this.currentState !== this.EditorState.MULTILINE) {
+                const range = selection.getRangeAt(0);
+
+                // Only handle if there's a selection (not collapsed)
+                if (!range.collapsed) {
+                    const selectedText = selection.toString();
+
+                    // Check if it's a single-line selection (no newlines)
+                    if (!selectedText.includes('\n')) {
+                        event.preventDefault();
+
+                        // Copy to clipboard
+                        navigator.clipboard.writeText(selectedText);
+
+                        // Delete the selection
+                        range.deleteContents();
+                        this.#saveToHistory(pre, true, true); // Force save for cut operation
+                        this.#forceContentEditable(table);
+                        return;
+                    }
+                }
+            }
+            // If multiline or no selection, let it fall through to multiline handler
         }
 
         if ((event.key === 'a' || event.key === 'A') && (event.ctrlKey || event.metaKey)) {
@@ -956,7 +1197,7 @@ class EditableHighlightJS {
                     selection.addRange(range);
 
                     this.activeEditor = pre;
-                    this.multiline = true;
+                    this.#setState(this.EditorState.MULTILINE);
                 }
             }
 
@@ -995,7 +1236,6 @@ class EditableHighlightJS {
 
         if (event.key === 'Tab') {
             event.preventDefault();
-            this.#saveToHistory(pre, true, true); // Force save for tab operations
 
             const { startContainer, startOffset } = range;
             const node = startContainer.nodeType === 3 ? startContainer : startContainer.firstChild;
@@ -1011,9 +1251,10 @@ class EditableHighlightJS {
                 node.textContent = node.textContent.slice(0, startOffset) + this.tabString + node.textContent.slice(startOffset);
                 this.#setCursorOffset(node, startOffset + this.tabSize);
             }
+
+            this.#saveToHistory(pre, true, true); // Force save for tab operations
         } else if (event.key === 'Enter') {
             event.preventDefault();
-            this.#saveToHistory(pre, true, true); // Force save for enter operations
 
             const { startContainer, startOffset } = range;
             const node = startContainer;
@@ -1044,11 +1285,11 @@ class EditableHighlightJS {
             row.parentNode.insertBefore(newRow, row.nextSibling);
             this.#updateLineNumbers(table);
             this.#focusCell(newCell, indent.length);
+            this.#saveToHistory(pre, true, true); // Force save for enter operations
         } else if (event.key === 'Backspace') {
             const cursorPos = range.startOffset;
             if (cursorPos === 0 && row.previousElementSibling) {
                 event.preventDefault();
-                this.#saveToHistory(pre, true, true); // Force save for backspace operations
 
                 const prevRow = row.previousElementSibling;
                 const prevCell = prevRow.cells[1];
@@ -1070,27 +1311,28 @@ class EditableHighlightJS {
                     this.#updateLineNumbers(table);
                     this.#focusCell(prevCell, prevCell.textContent.length);
                 }
-            } else {
+                this.#saveToHistory(pre, true, true); // Force save for backspace operations
+            } else if (!range.collapsed) {
                 // Handle selection deletion for backspace
-                if (!range.collapsed) {
-                    event.preventDefault();
-                    this.#saveToHistory(pre, true, true); // Force save for selection deletion
-                    range.deleteContents();
-                } else {
-                    cell.contentEditable = true;
-                    cell.focus();
-                    range.deleteContents();
-                    this.#setCursorOffset(range.startContainer, range.startOffset);
-                }
+                event.preventDefault();
+                range.deleteContents();
+                this.#saveToHistory(pre, true, true); // Force save for selection deletion
+            } else {
+                cell.contentEditable = true;
+                cell.focus();
+                range.deleteContents();
+                this.#setCursorOffset(range.startContainer, range.startOffset);
             }
 
             this.#removeMalformedRows(table);
+            this.#forceContentEditable(table);
         } else if (event.key === 'Delete') {
             // Handle selection deletion for delete key
             if (!range.collapsed) {
                 event.preventDefault();
-                this.#saveToHistory(pre, true, true); // Force save for delete operations
                 range.deleteContents();
+                this.#saveToHistory(pre, true, true); // Force save for delete operations
+                this.#forceContentEditable(table);
             }
         }
     }
@@ -1100,23 +1342,22 @@ class EditableHighlightJS {
      * @param {KeyboardEvent} event - The keyboard event
      */
     #handleMultilineKeyDown(event) {
-        if (!this.multiline || !this.activeEditor) {
+        if (this.currentState !== this.EditorState.MULTILINE &&
+            this.currentState !== this.EditorState.TYPING_AFTER_SELECTION) {
+            return;
+        }
+
+        if (!this.activeEditor) {
             return;
         }
 
         // Handle continued typing after selection deletion
-        if (this.typingAfterSelection && event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        if (this.currentState === this.EditorState.TYPING_AFTER_SELECTION &&
+            event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
             event.preventDefault();
 
-            // Reset the timer
-            this.typingAfterSelection = false;
-            setTimeout(() => {
-                if (!this.typingAfterSelection) {
-                    this.activeEditor = null;
-                    this.multiline = false;
-                }
-            }, 100);
-            this.typingAfterSelection = true;
+            // Reset the timeout - continue typing mode
+            this.#setState(this.EditorState.TYPING_AFTER_SELECTION, 100);
 
             // Insert character at current cursor position
             const selection = window.getSelection();
@@ -1134,10 +1375,8 @@ class EditableHighlightJS {
         }
 
         // Exit typing mode for any other key
-        if (this.typingAfterSelection) {
-            this.typingAfterSelection = false;
-            this.activeEditor = null;
-            this.multiline = false;
+        if (this.currentState === this.EditorState.TYPING_AFTER_SELECTION) {
+            this.#setState(this.EditorState.IDLE);
             return;
         }
 
@@ -1273,22 +1512,45 @@ class EditableHighlightJS {
 
             if (table.rows.length === 0) {
                 const newRow = document.createElement('tr');
-                newRow.innerHTML = '<td>1</td><td contenteditable="true"></td>';
+                const lineNumCell = document.createElement('td');
+                lineNumCell.textContent = '1';
+                const contentCell = document.createElement('td');
+                contentCell.contentEditable = true;
+
+                // Create an empty text node and place cursor in it
+                const textNode = document.createTextNode('');
+                contentCell.appendChild(textNode);
+
+                newRow.appendChild(lineNumCell);
+                newRow.appendChild(contentCell);
                 table.appendChild(newRow);
-                this.#updateLineNumbers(table);
+
+                // Programmatically click to establish proper focus (fixes HighlightJS span issue)
+                contentCell.click();
+
+                // Also manually set the cursor as backup
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.setStart(textNode, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                startCell.contentEditable = true;
+                startCell.focus();
+                this.#setCursorPosition(startCell, startCellTextBefore.length);
             }
 
-            startCell.contentEditable = true;
-            startCell.focus();
-            this.#setCursorPosition(startCell, startCellTextBefore.length);
+            this.#setState(this.EditorState.IDLE);
 
-            this.activeEditor = null;
-            this.multiline = false;
-
-            if (window.hljsl) {
+            // Don't highlight empty editors - HighlightJS creates empty spans that break typing
+            const hasContent = table.rows.length > 0 &&
+                              Array.from(table.rows).some((row) => row.cells[1]?.textContent.trim());
+            if (hasContent && window.hljsl) {
                 window.hljsl.highlight(pre);
             }
 
+            this.#forceContentEditable(table);
             return;
         }
 
@@ -1410,21 +1672,45 @@ class EditableHighlightJS {
 
             if (table.rows.length === 0) {
                 const newRow = document.createElement('tr');
-                newRow.innerHTML = '<td>1</td><td contenteditable="true"></td>';
+                const lineNumCell = document.createElement('td');
+                lineNumCell.textContent = '1';
+                const contentCell = document.createElement('td');
+                contentCell.contentEditable = true;
+
+                // Create an empty text node and place cursor in it
+                const textNode = document.createTextNode('');
+                contentCell.appendChild(textNode);
+
+                newRow.appendChild(lineNumCell);
+                newRow.appendChild(contentCell);
                 table.appendChild(newRow);
-                this.#updateLineNumbers(table);
+
+                // Programmatically click to establish proper focus (fixes HighlightJS span issue)
+                contentCell.click();
+
+                // Also manually set the cursor as backup
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.setStart(textNode, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                startCell.contentEditable = true;
+                startCell.focus();
+                this.#setCursorPosition(startCell, startCellTextBefore.length);
             }
 
-            startCell.contentEditable = true;
-            startCell.focus();
-            this.#setCursorPosition(startCell, startCellTextBefore.length);
+            this.#setState(this.EditorState.IDLE);
 
-            this.activeEditor = null;
-            this.multiline = false;
-
-            if (window.hljsl) {
+            // Don't highlight empty editors - HighlightJS creates empty spans that break typing
+            const hasContent = table.rows.length > 0 &&
+                              Array.from(table.rows).some((row) => row.cells[1]?.textContent.trim());
+            if (hasContent && window.hljsl) {
                 window.hljsl.highlight(pre);
             }
+
+            this.#forceContentEditable(table);
 
             return;
         }
@@ -1590,29 +1876,43 @@ class EditableHighlightJS {
 
             if (table.rows.length === 0) {
                 const newRow = document.createElement('tr');
-                newRow.innerHTML = '<td>1</td><td contenteditable="true"></td>';
+                const lineNumCell = document.createElement('td');
+                lineNumCell.textContent = '1';
+                const contentCell = document.createElement('td');
+                contentCell.contentEditable = true;
+
+                // Create a text node with the typed character
+                const textNode = document.createTextNode(event.key);
+                contentCell.appendChild(textNode);
+
+                newRow.appendChild(lineNumCell);
+                newRow.appendChild(contentCell);
                 table.appendChild(newRow);
-                this.#updateLineNumbers(table);
+
+                // Programmatically click to establish proper focus (fixes HighlightJS span issue)
+                contentCell.click();
+
+                // Also manually set the cursor after the typed character
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.setStart(textNode, 1);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                startCell.contentEditable = true;
+                startCell.focus();
+                this.#setCursorPosition(startCell, startCellTextBefore.length + 1);
             }
 
-            startCell.contentEditable = true;
-            startCell.focus();
-            this.#setCursorPosition(startCell, startCellTextBefore.length + 1);
+            // Enter typing after selection mode
+            this.#setState(this.EditorState.TYPING_AFTER_SELECTION, 100);
 
-            // Don't exit multiline mode immediately - let user continue typing
-            // Set a flag to indicate we're in typing mode after selection deletion
-            this.typingAfterSelection = true;
-
-            // Exit multiline mode after a short delay if no more typing occurs
-            setTimeout(() => {
-                if (this.typingAfterSelection) {
-                    this.activeEditor = null;
-                    this.multiline = false;
-                    this.typingAfterSelection = false;
-                }
-            }, 100);
-
-            if (window.hljsl) {
+            // Don't highlight empty editors - HighlightJS creates empty spans that break typing
+            // But DO highlight if there's actual content (user typed a character)
+            const hasContent = table.rows.length > 0 &&
+                              Array.from(table.rows).some((row) => row.cells[1]?.textContent.trim());
+            if (hasContent && window.hljsl) {
                 window.hljsl.highlight(pre);
             }
 
@@ -1709,15 +2009,13 @@ class EditableHighlightJS {
      * @param {MouseEvent} event - The mouse event
      */
     #handleMouseDown(event) {
-        // Exit typing mode if clicking
-        if (this.typingAfterSelection) {
-            this.typingAfterSelection = false;
-            this.activeEditor = null;
-            this.multiline = false;
+        // Clear typing state if clicking
+        if (this.currentState === this.EditorState.TYPING_AFTER_SELECTION) {
+            this.#setState(this.EditorState.IDLE);
         }
 
         this.activeEditor = event.currentTarget.closest('pre');
-        this.multiline = false;
+        this.#setState(this.EditorState.IDLE);
 
         const selection = window.getSelection();
         if (selection) {
@@ -1743,7 +2041,7 @@ class EditableHighlightJS {
         if (selectedText.includes('\n')) {
             const pre = table.closest('pre');
             this.activeEditor = pre;
-            this.multiline = true;
+            this.#setState(this.EditorState.MULTILINE);
 
             const operationId = `multiline-selection-${Date.now()}`;
             this.addPendingOperation(operationId);
@@ -1755,8 +2053,7 @@ class EditableHighlightJS {
         }
 
         if (selectedText && !selectedText.includes('\n')) {
-            this.activeEditor = null;
-            this.multiline = false;
+            this.#setState(this.EditorState.IDLE);
 
             const operationId = `single-selection-${Date.now()}`;
             this.addPendingOperation(operationId);
@@ -1965,16 +2262,13 @@ class EditableHighlightJS {
         }
 
         if (!selection || selection.isCollapsed) {
-            this.activeEditor = null;
-            this.multiline = false;
+            this.#setState(this.EditorState.IDLE);
 
             const row = event.target.closest('tr');
-            if (row) {
+            if (row && row.cells[1]) {
                 const cell = row.cells[1];
-                if (cell) {
-                    cell.contentEditable = true;
-                    cell.focus();
-                }
+                cell.contentEditable = true;
+                cell.focus();
             }
         }
 
@@ -1994,45 +2288,108 @@ class EditableHighlightJS {
             return;
         }
 
-        const editorId = pre.dataset.hljslId;
-        this.cursorX = this.#getCursorPosition(pre);
+        const editorId = pre.dataset.editorHistory;
 
         const controls = pre.previousElementSibling;
         if (controls && controls.classList.contains('editor-controls')) {
             pre.classList.add('disabled');
         }
 
-        if (pre._debounceHandler) {
-            table.removeEventListener('keyup', pre._debounceHandler);
-
-            const timerId = this.debounceTimers.get(pre);
-            if (timerId) {
-                clearTimeout(timerId);
-                this.debounceTimers.delete(pre);
-            }
-
-            delete pre._debounceHandler;
+        // Properly remove event listeners using stored bound handlers
+        const handlers = this.boundHandlers.get(table);
+        if (handlers) {
+            table.removeEventListener('keyup', handlers.keyUp);
+            table.removeEventListener('keydown', handlers.keyDown);
+            table.removeEventListener('mousedown', handlers.mouseDown);
+            table.removeEventListener('paste', handlers.paste);
+            table.removeEventListener('mouseup', handlers.mouseUp);
+            this.boundHandlers.delete(table);
         }
 
-        table.removeEventListener('keydown', this.#handleKeyDown.bind(this));
-        table.removeEventListener('mousedown', this.#handleMouseDown.bind(this));
-        table.removeEventListener('paste', this.#handlePastedContent.bind(this));
-        table.removeEventListener('mouseup', this.#handleMouseUp.bind(this));
-
-        for (const row of table.rows) {
-            const codeCell = row.cells[1];
-            if (codeCell) codeCell.contentEditable = false;
+        // Clean up debounce timer
+        const timerId = this.debounceTimers.get(pre);
+        if (timerId) {
+            clearTimeout(timerId);
+            this.debounceTimers.delete(pre);
         }
 
+        // Clean up history timer
         if (editorId) {
             const historyTimer = this.historyTimers.get(editorId);
             if (historyTimer) {
                 clearTimeout(historyTimer);
                 this.historyTimers.delete(editorId);
             }
+
+            // Clean up history data for this editor
+            // this.history.delete(editorId);
         }
 
+        // Clear activeEditor reference if it's this editor
+        if (this.activeEditor === pre) {
+            this.#setState(this.EditorState.IDLE);
+        }
+
+        // Make cells non-editable
+        for (const row of table.rows) {
+            const codeCell = row.cells[1];
+            if (codeCell) codeCell.contentEditable = false;
+        }
+
+        // Remove from editors set
         this.editors.delete(pre);
+
+        // Clean up reference
+        delete pre._debounceHandler;
+    }
+
+    /**
+     * Destroy all editors and clean up resources
+     */
+    destroy() {
+        // Clear state timeout
+        if (this.stateTimeout) {
+            clearTimeout(this.stateTimeout);
+            this.stateTimeout = null;
+        }
+
+        // Deactivate all editors
+        for (const pre of this.editors) {
+            this.deactivateEditor(pre);
+            pre.removeAttribute('data-editor-history');
+        }
+
+        // Remove global event listeners
+        document.removeEventListener('keydown', this.boundGlobalHandlers.multilineKeyDown);
+        document.removeEventListener('keydown', this.boundGlobalHandlers.historyKeyDown);
+
+        // Clear all remaining timers
+        for (const timerId of this.debounceTimers.values()) {
+            clearTimeout(timerId);
+        }
+        this.debounceTimers.clear();
+
+        for (const timerId of this.historyTimers.values()) {
+            clearTimeout(timerId);
+        }
+        this.historyTimers.clear();
+
+        // Clear all data structures
+        this.editors.clear();
+        this.history.clear();
+        this.pendingOperations.clear();
+
+        // Clear pending operation timeouts
+        for (const timeoutId of this.pendingOperationTimeouts.values()) {
+            clearTimeout(timeoutId);
+        }
+        this.pendingOperationTimeouts.clear();
+
+        this.boundHandlers = new WeakMap();
+
+        // Reset state
+        this.#setState(this.EditorState.IDLE);
+        this.activeEditor = null;
     }
 
     /**
@@ -2101,6 +2458,40 @@ class EditableHighlightJS {
             }
         } else {
             window.hljsl.highlight(pre);
+        }
+    }
+
+    #forceContentEditable(table) {
+        const rows = Array.from(table.rows).length;
+
+        // Any tables with more than 2 rows are safe
+        if (rows > 2) {
+            return;
+        }
+
+        // Remove empty second row if exists
+        if (rows === 2 && table.rows[1].textContent === '') {
+            table.rows[1].remove();
+        }
+
+        // Ensure first row second cell is editable if empty
+        if (table.rows[0].cells[1].textContent === '') {
+            table.rows[0].cells[1].innerHTML = '';
+            // Delay to ensure proper focus otherwise typing deletes the cell
+            setTimeout(() => {
+                table.rows[0].cells[1].contentEditable = true;
+                table.rows[0].cells[1].focus();
+
+                // Move caret to end of content
+                const range = document.createRange();
+                range.selectNodeContents(table.rows[0].cells[1]);
+                range.collapse(false);
+
+                // Set selection
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }, 100);
         }
     }
 
