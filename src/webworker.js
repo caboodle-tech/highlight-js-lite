@@ -177,6 +177,10 @@ class Webworker {
      * @returns The language name meant for display or null if not determined
      */
     #getDisplayLanguage(langs, withKey = false) {
+        if (!langs) {
+            return null;
+        }
+
         for (let lang of langs) {
             lang = lang.trim();
             if (languageDisplayNames.has(lang)) {
@@ -186,9 +190,11 @@ class Webworker {
                 return languageDisplayNames.get(lang);
             }
         }
+
         if (withKey) {
             return { key: null, val: null };
         }
+
         return null;
     }
 
@@ -247,9 +253,15 @@ class Webworker {
                 languageKey = 'plaintext';
             } else {
             // Case 4: Not locked
-                const langData = this.#getDisplayLanguage(result.language.split(','), true);
-                displayLanguage = langData.val;
-                languageKey = langData.key;
+                const langData = this.#getDisplayLanguage(result.language?.split(',') ?? [], true);
+
+                if (!langData || !langData.val || !langData.key) {
+                    displayLanguage = ['Plaintext'];
+                    languageKey = 'plaintext';
+                } else {
+                    displayLanguage = langData.val;
+                    languageKey = langData.key;
+                }
             }
 
             // Set the result language after determining the correct value
@@ -362,7 +374,7 @@ class Webworker {
         self.hljs.registerAliases(['py'], { languageName: 'python' });
         self.hljs.registerAliases(['vim-script'], { languageName: 'vim' });
         self.hljs.registerAliases(
-            ['php5', 'php6', 'php7', 'php8', 'php9'],
+            ['php5', 'php6', 'php7', 'php8', 'php9', 'php10'],
             { languageName: 'php' }
         );
     }
