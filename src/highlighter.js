@@ -117,22 +117,16 @@ class Highlighter {
     }
 
     /**
-     * Connect to HLJSL's web worker
+     * Connects the highlight worker. Uses a blob URL entry script so `new Worker` stays on the
+     * page's origin when hljsl is loaded cross origin (e.g. CDN vs local dev). Bootstrap sets
+     * `self.__hljslScriptBase` to `#root`, then `importScripts` the real worker URL; `#root`
+     * already ends with `/` from hljsl `absolutePath`, so `workerUrl` needs no extra slash.
      */
     connect() {
         if (this.#worker) return;
 
-        // `this.#root` (scriptDirname) is always normalized to end with "/" by
-        // the absolutePath helper, so no extra separator is needed here.
         const workerUrl = `${this.#root}hljsl.min.js`;
 
-        // Use a Blob URL so the Worker constructor is always same-origin relative to
-        // the page. This avoids the SecurityError that browsers throw when the page
-        // is on a different origin than the script (e.g. page on http://localhost,
-        // script loaded from a CDN over HTTPS).  The blob bootstrap sets
-        // `self.__hljslScriptBase` before calling `importScripts` so that the
-        // worker code can resolve `hljs.min.js` relative to the real CDN path
-        // rather than relative to the opaque blob: URL.
         const bootstrap = [
             `self.__hljslScriptBase = ${JSON.stringify(this.#root)};`,
             `importScripts(${JSON.stringify(workerUrl)});`
