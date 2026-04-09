@@ -27,6 +27,13 @@ const scriptDirname = (() => {
 
     // Web Worker environment
     if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
+        // When the worker was bootstrapped via a Blob URL (CORS-safe CDN loading),
+        // the main thread sets `self.__hljslScriptBase` before calling
+        // `importScripts`.  Prefer that over `self.location.href` which would be
+        // an opaque blob: URL and would make relative asset resolution fail.
+        if (typeof self.__hljslScriptBase === 'string' && self.__hljslScriptBase) {
+            return self.__hljslScriptBase;
+        }
         return absolutePath(new URL(self.location.href));
     }
 

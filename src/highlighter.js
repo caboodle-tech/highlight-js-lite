@@ -121,7 +121,33 @@ class Highlighter {
      */
     connect() {
         if (this.#worker) return;
-        const worker = new Worker(`${this.#root}/hljsl.min.js`);
+
+        // `this.#root` (scriptDirname) is always normalized to end with "/" by
+        // the absolutePath helper, so no extra separator is needed here.
+        const workerUrl = `${this.#root}hljsl.min.js`;
+
+        // Use a Blob URL so the Worker constructor is always same-origin relative to
+        // the page. This avoids the SecurityError that browsers throw when the page
+        // is on a different origin than the script (e.g. page on http://localhost,
+        // script loaded from a CDN over HTTPS).  The blob bootstrap sets
+        // `self.__hljslScriptBase` before calling `importScripts` so that the
+        // worker code can resolve `hljs.min.js` relative to the real CDN path
+        // rather than relative to the opaque blob: URL.
+        const bootstrap = [
+            `self.__hljslScriptBase = ${JSON.stringify(this.#root)};`,
+            `importScripts(${JSON.stringify(workerUrl)});`
+        ].join('\n');
+
+        const blob = new Blob([bootstrap], { type: 'application/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        let worker;
+        try {
+            worker = new Worker(blobUrl);
+        } finally {
+            URL.revokeObjectURL(blobUrl);
+        }
+
         this.#worker = worker;
         worker.onmessage = this.#receiveResponse.bind(this);
     }
