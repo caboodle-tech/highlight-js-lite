@@ -26,145 +26,125 @@
                 document.write(`<p>You attempted to view the template file that is used as Highlight JS Lites (HLJSL) demo page. Please build HLJSL first then view the index.html file in the <a href="../website/index.html">website directory</a>.</p>`);
             }, 1);
         }
-        
-        /**
-         * DOMWatcher class to watch for new elements added to the DOM.
-         */
-        class DOMWatcher {
-
-            constructor() {
-                this.watchers = new Map();
-                this.observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        mutation.addedNodes.forEach((node) => {
-                            if (node.nodeType === 1) this.checkNode(node);
-                        });
-                    });
-                });
-
-                this.observer.observe(document.documentElement, {
-                    childList: true,
-                    subtree: true
-                });
-            }
-
-            watch(selector, callback, once = true) {
-                const watchId = Symbol();
-                if (!this.watchers.has(selector)) {
-                    this.watchers.set(selector, new Map());
-                }
-
-                const wrappedCallback = (element) => {
-                    callback(element);
-                    if (once) {
-                        this.unwatch(selector, watchId);
-                    }
-                };
-
-                this.watchers.get(selector).set(watchId, wrappedCallback);
-
-                return {
-                    unwatch: () => this.unwatch(selector, watchId)
-                };
-            }
-
-            unwatch(selector, id) {
-                const callbacks = this.watchers.get(selector);
-                callbacks?.delete(id);
-                if (callbacks?.size === 0) {
-                    this.watchers.delete(selector);
-                }
-            }
-
-            checkNode(node) {
-                this.watchers.forEach((callbacks, selector) => {
-                    if (node.matches?.(selector)) {
-                        callbacks.forEach((callback) => callback(node));
-                    }
-                });
-            }
-
-            disconnect() {
-                this.observer.disconnect();
-                this.watchers.clear();
-            }
-
-        }
-
-        const Watcher = new DOMWatcher();
-
-        /**
-         * Setup the color mode of the site / demo of light and dark themes for HLJSL.
-         */
-        Watcher.watch('#color-mode-toggle', (elem) => {
-            const lightToggle = elem.querySelector('#light-toggle');
-            const autoToggle = elem.querySelector('#auto-toggle');
-            const darkToggle = elem.querySelector('#dark-toggle');
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-            const applyMode = (mode) => {
-                document.documentElement.classList.remove('light', 'dark');
-                document.documentElement.classList.add(mode);
-            };
-
-            function getSystemMode() {
-                return mediaQuery.matches ? 'dark' : 'light';
-            }
-
-            // Set initial mode
-            const savedMode = localStorage.getItem('darkMode');
-
-            if (savedMode) {
-                applyMode(savedMode);
-                (savedMode === 'light' ? lightToggle : darkToggle).checked = true;
-            } else {
-                const systemMode = getSystemMode();
-                applyMode(systemMode);
-                autoToggle.checked = true;
-            }
-
-            // Handle toggle changes
-            elem.addEventListener('change', (e) => {
-                const mode = e.target.id.split('-')[0];
-                if (mode === 'auto') {
-                    localStorage.removeItem('darkMode');
-                    applyMode(getSystemMode());
-                } else {
-                    localStorage.setItem('darkMode', mode);
-                    applyMode(mode);
-                }
-            });
-
-            // Handle system preference changes
-            mediaQuery.addEventListener('change', () => {
-                if (!localStorage.getItem('darkMode')) {
-                    applyMode(getSystemMode());
-                }
-            });
-        });
     </script>
     <script src="./hljsl.min.js"></script>
 </head>
 <body>
+    <div id="theme-preference-sync" hidden aria-hidden="true">
+        <input type="radio" name="theme-preference" value="light" id="theme-pref-light">
+        <input type="radio" name="theme-preference" value="system" id="theme-pref-system" checked>
+        <input type="radio" name="theme-preference" value="dark" id="theme-pref-dark">
+    </div>
+    <script>
+        (() => {
+            const THEME_STORAGE_KEY = 'theme-preference';
+            const ALLOWED = new Set(['light', 'system', 'dark']);
+            const syncContainerId = 'theme-preference-sync';
+
+            let container = document.getElementById(syncContainerId);
+            if (!container) {
+                container = document.createElement('div');
+                container.id = syncContainerId;
+                container.hidden = true;
+                container.setAttribute('aria-hidden', 'true');
+                ['light', 'system', 'dark'].forEach((v) => {
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = 'theme-preference';
+                    input.value = v;
+                    if (v === 'system') {
+                        input.checked = true;
+                    }
+                    container.appendChild(input);
+                });
+                const mount = document.body ?? document.head;
+                if (mount) {
+                    mount.appendChild(container);
+                }
+            }
+
+            let stored = null;
+            try {
+                stored = localStorage.getItem(THEME_STORAGE_KEY);
+            } catch {
+                /* ignore (e.g. disabled storage) */
+            }
+            const value = ALLOWED.has(stored) ? stored : 'system';
+            const input = container.querySelector(`input[value="${value}"]`);
+            if (input) {
+                input.checked = true;
+            }
+        })();
+
+        (() => {
+            const THEME_STORAGE_KEY = 'theme-preference';
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+
+            const applyHtmlClassFromTheme = () => {
+                const checked = document.querySelector('input[name="theme-preference"]:checked');
+                const v = checked?.value ?? 'system';
+                document.documentElement.classList.remove('light', 'dark');
+                if (v === 'system') {
+                    document.documentElement.classList.add(mq.matches ? 'dark' : 'light');
+                } else {
+                    document.documentElement.classList.add(v);
+                }
+            };
+
+            const persist = (val) => {
+                try {
+                    if (val === 'system') {
+                        localStorage.removeItem(THEME_STORAGE_KEY);
+                    } else {
+                        localStorage.setItem(THEME_STORAGE_KEY, val);
+                    }
+                } catch {
+                    /* ignore */
+                }
+            };
+
+            document.addEventListener('change', (e) => {
+                const t = e.target;
+                if (t?.matches?.('input[name="theme-preference"]')) {
+                    persist(t.value);
+                    applyHtmlClassFromTheme();
+                    const menu = document.querySelector('details.theme-menu');
+                    if (menu) {
+                        menu.open = false;
+                    }
+                }
+            });
+
+            mq.addEventListener('change', () => {
+                const sys = document.querySelector('input[name="theme-preference"][value="system"]');
+                if (sys?.checked) {
+                    applyHtmlClassFromTheme();
+                }
+            });
+
+            applyHtmlClassFromTheme();
+        })();
+    </script>
     <header>
-        <div id="color-mode-toggle" role="radiogroup" aria-labelledby="color-mode-toggle-label">
-            <span id="color-mode-toggle-label" class="sr-only">Color Mode</span>
-            <input type="radio" id="light-toggle" name="color-mode" aria-label="Light Mode">
-            <input type="radio" id="auto-toggle" name="color-mode" aria-label="Auto Mode" checked>
-            <input type="radio" id="dark-toggle" name="color-mode" aria-label="Dark Mode">
-            <div class="slider"></div>
-            <label class="option" for="light-toggle" title="Toggle Light Mode">
-                <svg viewBox="0 0 24 24"><path d="M22.088 13.126l1.912-1.126-1.912-1.126c-1.021-.602-1.372-1.91-.788-2.942l1.093-1.932-2.22-.02c-1.185-.01-2.143-.968-2.153-2.153l-.02-2.219-1.932 1.093c-1.031.583-2.34.233-2.941-.788l-1.127-1.913-1.127 1.913c-.602 1.021-1.91 1.372-2.941.788l-1.932-1.093-.02 2.219c-.01 1.185-.968 2.143-2.153 2.153l-2.22.02 1.093 1.932c.584 1.032.233 2.34-.788 2.942l-1.912 1.126 1.912 1.126c1.021.602 1.372 1.91.788 2.942l-1.093 1.932 2.22.02c1.185.01 2.143.968 2.153 2.153l.02 2.219 1.932-1.093c1.031-.583 2.34-.233 2.941.788l1.127 1.913 1.127-1.913c.602-1.021 1.91-1.372 2.941-.788l1.932 1.093.02-2.219c.011-1.185.969-2.143 2.153-2.153l2.22-.02-1.093-1.932c-.584-1.031-.234-2.34.788-2.942zm-10.117 6.874c-4.411 0-8-3.589-8-8s3.588-8 8-8 8 3.589 8 8-3.589 8-8 8zm6.029-8c0 3.313-2.687 6-6 6s-6-2.687-6-6 2.687-6 6-6 6 2.687 6 6z"/></svg>
-            </label>
-            <label class="option" for="auto-toggle" title="Toggle Auto Mode">
-                <svg viewBox="0 0 24 24"><path d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12-5.373-12-12-12-12 5.373-12 12zm2 0c0-5.514 4.486-10 10-10v20c-5.514 0-10-4.486-10-10z"/></svg>
-            </label>
-            <label class="option" for="dark-toggle" title="Toggle Dark Mode">
-                <svg viewBox="0 0 24 24">
-                    <path fill-rule="evenodd" d="M12 3a9 9 0 100 18 9 9 0 000-18zm-2 7a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4zm5 1a1 1 0 100-2 1 1 0 000 2zm-7 3a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm6 2a1 1 0 100-2 1 1 0 000 2zm3-3a.8 .8 0 100-1.6.8 .8 0 000 1.6zm-4 3a.7 .7 0 100-1.4.7 .7 0 000 1.4zm-3-1a.6 .6 0 100-1.2.6 .6 0 000 1.2zm7-5a.5 .5 0 100-1 .5 .5 0 000 1z"/>
-                </svg>
-            </label>
-        </div>
+        <details class="theme-menu">
+            <summary class="theme-control">
+                <span class="sr-only">Color scheme</span>
+            </summary>
+            <div class="theme-extra" role="group" aria-label="Choose color scheme">
+                <label class="theme-control theme-pick" data-theme-pick="light" for="theme-pref-light">
+                    <span aria-hidden="true">☀️</span>
+                    <span class="sr-only">Light</span>
+                </label>
+                <label class="theme-control theme-pick" data-theme-pick="system" for="theme-pref-system">
+                    <span aria-hidden="true">⚙️</span>
+                    <span class="sr-only">System default</span>
+                </label>
+                <label class="theme-control theme-pick" data-theme-pick="dark" for="theme-pref-dark">
+                    <span aria-hidden="true">🌖</span>
+                    <span class="sr-only">Dark</span>
+                </label>
+            </div>
+        </details>
         <div id="github">
             <a href="https://github.com/caboodle-tech/highlight-js-lite" target="_blank">
                 View GitHub Repository
@@ -193,18 +173,18 @@
                 Copy code to clipboard button with built-in language (i18n) support.
             </li>
             <li>
-                Light and dark theme support with the ability to easily build your own theme.
+                Light and dark appearance via CSS (<code>light-dark()</code>, <code>color-scheme</code>, and optional <code>html.light</code> / <code>html.dark</code> or theme controls). Customize colors by overriding <code>--highlight-*</code> and <code>--editor-control-*</code> custom properties.
             </li>
         </ul>
         <div class="header">Usage</div>
         <p>
-            HLJS comes precompiled and can be added to your site by including the appropriate files from the <code>dist</code> folder to your site: Include the <code>hljsl.min.css</code> and <code>hljsl.min.js</code> files in the <code>&lt;head&gt;</code> of your pages. Do not add the <code>hljs.min.js</code> file (notice the lack of <code>l</code> after <code>hljs</code>) this will be loaded by the Web Worker when needed.
+            <strong>Self-hosted <code>dist</code> (full control).</strong> HLJSL is not published as an npm package; copy <code>hljsl.min.css</code> and <code>hljsl.min.js</code> from <code>dist</code> (this demo uses the built files in the <code>website</code> folder). Link the stylesheet and script yourself so cascade order is explicit. Do <strong>not</strong> add <code>hljs.min.js</code> as a page script (Highlight.js runs inside the worker). Do <strong>not</strong> add a separate worker file: HLJSL starts the worker automatically using the <strong>same</strong> <code>hljsl.min.js</code> URL you already load.
         </p>
         <p>
-            The precompiled version of HLJSL uses a modified version of the light and dark StackOverflow theme. If you would like to compile HLJSL with a different theme the process is fairly simple and is covered in the <a href="https://github.com/caboodle-tech/highlight-js-lite/tree/main?tab=readme-ov-file#compile-with-a-different-theme" target="_blank">Compile With a Different Theme</a> section below.
+            <strong>CDN (jsDelivr + GitHub).</strong> You can load <code>hljsl.min.js</code> from jsDelivr’s <code>gh</code> endpoint; keep <code>hljsl.min.js</code>, <code>hljsl.min.css</code>, and <code>hljs.min.js</code> together in <code>dist/</code> on that branch or tag. Prefer <code>@latest</code> or pin a version such as <code>@v4.0.0</code> (see the <a href="https://github.com/caboodle-tech/highlight-js-lite#usage" target="_blank">README</a>). On known CDNs, HLJSL can inject the stylesheet early unless you set <code>cdnAutoAssets: false</code> before the script.
         </p>
         <p>
-            For greater control over HLJSL there are configuration options you can modify covered in the next section. See the <a href="https://github.com/caboodle-tech/highlight-js-lite/tree/main?tab=readme-ov-file#public-methods" target="_blank">public methods</a> section if you would like to use HLJSL manually or in conjunction with your own application.
+            Configuration and <a href="https://github.com/caboodle-tech/highlight-js-lite#public-methods" target="_blank">public methods</a> are documented in the README.
         </p>
         <div class="header">Configure</div>
         <p>
@@ -264,6 +244,7 @@
                 &lt;script&gt;
                     window.hljslConfig = {
                         autoLoad: true,           // Auto process all pre code blocks
+                        cdnAutoAssets: undefined, // Omit on CDN for auto stylesheet inject; false to skip; true to force
                         hideNumbers: false,       // Hide the line numbers for code blocks
                         ignoreElements: [],       // Tags, .classes, and/or #ids not to look within
                         lang: 'en-us',            // Language help messages should display in
@@ -279,6 +260,11 @@
         </pre>
         <p>
             You may include or exclude any combination of these options. Any missing options from the global configuration object will use HLJSL's default for that option.
+        </p>
+
+        <div class="header">Styling</div>
+        <p>
+            Set seed variables such as <code>--highlight-bg</code>, <code>--highlight-color</code>, and <code>--editor-control-bar</code> on <code>:root</code> (or a wrapper) in CSS that loads <strong>after</strong> <code>hljsl.min.css</code>, or use <code>@layer</code> so your rules win. Details: <a href="https://github.com/caboodle-tech/highlight-js-lite#styling-css-variables" target="_blank">README: Styling (CSS variables)</a>.
         </p>
 
         <div class="header">Mini Editors</div>

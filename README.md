@@ -5,149 +5,152 @@ HLJSL is a simple wrapper for the [highlight.js](https://github.com/highlightjs/
 - Automatic code highlighting for `<pre><code>` blocks using a Web Worker for performance.
 - Automatic line numbers for `<pre><code>` blocks which can be disabled according to preference.
 - Automatic `pre` padding (left-padding) correction allowing you to indent `<pre><code>` blocks just like any other code in your source files; view the source of the [demo page](https://caboodle-tech.github.io/highlight-js-lite/) for examples.
-- Copy code to clipboard button with built-in language (i18n) support.
-- Light and dark theme support with the ability to easily build your own theme.
+- Copy code to clipboard button with built-in language (i18n) support (hidden on single-line non-editor blocks).
+- Light and dark appearance using modern CSS (`light-dark()`, `color-scheme`, optional `html.light` / `html.dark` or theme radios), customizable by overriding CSS custom properties.
 
 ## Usage
 
-HLJS comes precompiled and can be added to your site by including the appropriate files from the `dist` folder to your site: Include the `hljsl.min.css` and `hljsl.min.js` files in the `<head>` of your pages. Do not add the `hljs.min.js` file (notice the lack of `l` after `hljs`) this will be loaded by the Web Worker when needed.
+### Self-hosted (`dist` folder) — full control
 
-The precompiled version of HLJSL uses a modified version of the light and dark StackOverflow theme. If you would like to compile HLJSL with a different theme the process is fairly simple and is covered in the [Compile With a Different Theme](#compile-with-a-different-theme) section below.
+HLJSL is not an npm package; ship the built files from the `dist` folder (or your own build output) with your site. Include `hljsl.min.css` and `hljsl.min.js` in the `<head>` (or wherever you load assets) so you control order relative to your own CSS:
 
-For greater control over HLJSL there are configuration options you can modify covered in the next section. See the [public methods](#public-methods) section if you would like to use HLJSL manually or in conjunction with your own application.
+```html
+<link rel="stylesheet" href="./hljsl.min.css">
+<script src="./hljsl.min.js"></script>
+```
+
+Do not add `hljs.min.js` as a `<script>` on the page (the name is easy to confuse). Highlight.js is loaded inside the Web Worker via `importScripts` from the same directory as `hljsl.min.js`.
+
+Do not try to include a separate “worker” file. HLJSL starts the worker automatically and points it at the same `hljsl.min.js` URL you already loaded; there is no second worker bundle to add.
+
+### CDN (jsDelivr + GitHub)
+
+You can also load the same files from [jsDelivr’s GitHub CDN](https://www.jsdelivr.com/?docs=gh) (no npm involved). `hljsl.min.js`, `hljsl.min.css`, and `hljs.min.js` must stay in the same directory on that URL so the worker can fetch Highlight.js.
+
+Prefer `@latest` (tracks the repository’s default branch; ensure `dist/` is present there):
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/caboodle-tech/highlight-js-lite@latest/dist/hljsl.min.js"></script>
+```
+
+Or pin a release tag for reproducible builds, e.g. `v4.0.0`:
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/caboodle-tech/highlight-js-lite@v4.0.0/dist/hljsl.min.js"></script>
+```
+
+On known CDN hosts, HLJSL injects `<link rel="stylesheet" href="…/hljsl.min.css">` early in `<head>` (before your other stylesheets) so your CSS can override tokens. To skip that and link CSS yourself (like self-hosted usage), set before the script:
+
+```javascript
+window.hljslConfig = { cdnAutoAssets: false };
+```
+
+Use `cdnAutoAssets: true` to force injection from any origin.
 
 ## Configure
 
-HLJSL is designed to require zero configuration but there two ways to modify the default settings for HLJSL. Using [query strings](https://en.wikipedia.org/wiki/Query_string) at the end of the HLJSL's src url will allow you to modify some of the core settings but not all of them:
+HLJSL is designed to require zero configuration but there are two ways to modify the default settings. Using [query strings](https://en.wikipedia.org/wiki/Query_string) at the end of HLJSL’s `src` URL allows some options:
 
-- **autoLoad=false** will disable auto loading (auto processing) of code blocks.
-- **lazyLoad=false** will disable lazy loading (lazy processing) of code blocks.
-- **hideNumbers=true** will disable showing the line numbers on processed blocks.
+- **autoLoad=false** will disable auto loading (auto processing) of 
+code blocks.
+- **lazyLoad=false** will disable lazy loading (lazy processing) of 
+code blocks.
+- **hideNumbers=true** will disable showing the line numbers on 
+processed blocks.
 
-For example if you wanted full control of when HLJSL processes code blocks you would add code similar to the following in your head tag:
+For example:
 
 ```html
 <script src="./hljsl.min.js?autoLoad=false&lazyLoad=false"></script>
 ```
 
-You can also use the css classes `hide-numbers` and `show-numbers` to overwrite the current settings for individual `<pre><code>` blocks:
+You can also use the CSS classes `hide-numbers` and `show-numbers` to override settings for individual `<pre><code>` blocks.
 
-```html
-<pre class="hide-numbers">
-    <code>
-        <!--
-            The class hide-numbers will hide the line numbers even
-            if they are supposed to display in your code blocks.
-        -->
-    <code>
-</pre>
-
-<pre class="show-numbers">
-    <code>
-        <!--
-            The class show-numbers will show the line numbers even
-            if they are supposed to be hidden by your settings.
-        -->
-    <code>
-</pre>
-```
-
-A more advanced way that allows complete control over all of HLJSL's settings is to set a global configuration object **before** the `<script>` tag that loads HLJSL:
+A global configuration object before the HLJSL `<script>` allows full control:
 
 ```javascript
 window.hljslConfig = {
     autoLoad: true,             // Auto process all pre code blocks
-    hideNumbers: false,         // Hide the line numbers for code blocks
+    cdnAutoAssets: undefined,   // Omit for CDN auto-detect; false disables CSS inject; true forces it
+    hideNumbers: false,         // Hide line numbers for code blocks
     ignoreElements: [],         // Tags, .classes, and/or #ids not to look within
-    lang: 'en-us',              // Language help messages should display in
-    lazyLoad: true,             // Process code blocks only when they may come into view
-    onlyAutoProcess: ['body']   // Tags, .classes, and/or #ids of elements to look within
-}
+    lang: 'en-us',              // Language for UI strings (e.g. copy button title)
+    lazyLoad: true,             // Process blocks when they may enter view
+    minLineNumbers: false,      // true / number: hide line numbers when line count is small
+    onlyAutoProcess: ['body']   // Tags, .classes, and/or #ids to search within
+};
 ```
 
-You may include or exclude any combination of these options. Any missing options from the global configuration object will use HLJSL's default for that option.
+Omitted keys keep HLJSL defaults.
 
-## Compile With a Different Theme
+## Styling (CSS variables)
 
-HLJSL uses sassy css (sass, or scss specifically) for themes. If you would like to modify the built in theme, use a different theme, or create your own theme you should download a copy of this repository and edit the `src/scss/hljsl.scss` file.
+Set seed custom properties on `:root` (or a scoped ancestor) in CSS that loads after `hljsl.min.css`, or place overrides in a higher-priority `@layer`:
 
-If you want to use a different theme you should edit the first line of the `hljsl.scss` file to point to the theme you want. New themes should be added in the `theme` directory following the pattern of the `caboodle-tech.scss` file.
+- `--highlight-*` (syntax and chrome colors)
+- `--editor-control-*` (editor toolbar)
 
-Once you have modified the theme to your liking or created and added your own you can compile your own production files with the following commands:
-
-```bash
-# Open a terminal at the root of the repository and run the following:
-pnpm install   # Only required once
-pnpm run build # Build the entire production release
-
-# Note: You can use `npm` instead of `pnpm` but any pull request you submit may not be accepted!
-```
-
-You can now add the `hljsl.min.css` file in the `dist` directory to your site to override the original styles HLJSL comes precompiled with.
-
-## Custom Builds
-
-If you would like full control over HLJSL's build process you can download a copy of this repository and use the following commands at the root the repository:
-
-```bash
-# Run once to install dependencies:
-pnpm install 
-
-# Make any changes you wish in the `src` directory then run:
-# All files created by a build command will be output to the `dist` directory.
-pnpm run build
-
-# Note: You can use `npm` instead of `pnpm` but any pull request you submit may not be accepted!
-```
+Rules in the sheet use resolved tokens named `--hljsl-r-*`; override the seeds above. With `@layer`, either keep HLJSL in a lower layer than your overrides, or use unlayered author CSS if you need it to win over layered HLJSL.
 
 ## Public Methods
 
-The primary instance of HLJSL added globally to the page as `hljsl` has the following publicly available methods:
+The global `hljsl` instance exposes:
 
-#### **connect**
+#### `connect`
 
-- Connect to HLJSL's web worker. This is automatically done but you can trigger it earlier if you like.
+- Connect to HLJSL’s web worker (normally automatic).
 
-#### **disconnect**
+#### `disconnect`
 
-- Disconnect from HLJSL's web worker.
+- Terminate the web worker and disconnect the DOM observer used for auto-load.
 
-#### **getAutoRunStatus**
+#### `getAutoRunStatus`
 
-- Check the status of the page being auto loaded (processed). Prevents instances of HLJSL from stepping on one another.
+- Whether auto processing is enabled.
 
-#### **getQuerySelectorFindAllString(find)**
+#### `getQuerySelectorFindAllString(find)`
 
-- An array of element tags, .classes, and/or #ids to locate in the page. Returns a string that can be used by querySelectorAll to find only the specified elements in the page.
+- Builds a query string from an array of tags / classes / ids.
 
-#### **getQuerySelectorNotWithinString(find, notWithin)**
+#### `getQuerySelectorNotWithinString(find, notWithin)`
 
-- Builds a query string to be used by querySelectorAll that allows not searching within .classes, #ids, and/or elements. `find` should be the query string for the element to find and `notWithin` should be an array of .classes, #ids, and/or elements to not search within.
+- Builds a query string that excludes certain containers.
 
-#### **getUserLanguage**
+#### `getUserLanguage`
 
-- Detect what language the user is viewing the page in. If you want to set a language you should add the `lang` attribute to the HTML tag before HLJSL runs.
+- Resolved page language (e.g. for i18n). Set `<html lang="…">` to influence this.
 
-#### **getVersion**
+#### `getVersion`
 
-- The version of HLJSL being used.
+- HLJSL version string.
 
-#### **highlight(codeElem)**
+#### `highlight(codeElem)`
 
-- Highlight a code element with HLJS using the HLJSL web worker.
+- Highlight a single `<code>` element via the worker.
 
-#### **highlightAll(container)**
+#### `highlightAll(container)`
 
-- Process all code blocks found within the provided container (element).
+- Highlight all matching blocks in `document` or inside `container`.
 
-#### **isConnected**
+#### `isConnected`
 
-- Check if HLJSL's Web worker is connected.
+- Whether the worker is active.
 
-#### **setConfig(config)**
+#### `setConfig(config)`
 
-- Allows changing the default settings being used by this instance of HLJSL.
+- Update options at runtime (same shape as `hljslConfig` where supported).
+
+## Build from source
+
+To produce the `dist/` artifacts locally (for self-hosting or contributing):
+
+```bash
+npm install
+npm run build
+```
+
+Outputs include `dist/hljsl.min.js`, `dist/hljsl.min.css`, and `dist/hljs.min.js`. Edit `src/css/hljsl.css` or other sources as needed, then rebuild.
 
 ## Contributions
 
-HLJSL is an open source (Commons Clause: MIT) community supported project, if you would like to help please consider <a href="https://github.com/caboodle-tech/highlight-js-lite/issues" target="_blank">tackling an issue</a> or <a href="https://ko-fi.com/caboodletech" target="_blank">making a donation</a> to keep the project alive.
+HLJSL is an open source (Commons Clause: MIT) community supported project. Please consider [tackling an issue](https://github.com/caboodle-tech/highlight-js-lite/issues) or [making a donation](https://ko-fi.com/caboodletech) to keep the project alive.

@@ -1,4 +1,3 @@
-import * as Sass from 'sass';
 import Fs from 'fs';
 import Path from 'path';
 import Terser from '@rollup/plugin-terser';
@@ -48,17 +47,17 @@ const compileJsOnBuild = [
     }
 ];
 
-const compileSassOnBuild = [
+const copyCssOnBuild = [
     {
-        src: Path.join(root, 'src', 'scss', 'hljsl.scss'),
+        src: Path.join(root, 'src', 'css', 'hljsl.css'),
         dest: Path.join(root, 'dist', 'hljsl.min.css')
     },
     {
-        src: Path.join(root, 'src', 'scss', 'hljsl.scss'),
+        src: Path.join(root, 'src', 'css', 'hljsl.css'),
         dest: Path.join(root, 'website', 'hljsl.min.css')
     },
     {
-        src: Path.join(root, 'src', 'scss', 'demo.scss'),
+        src: Path.join(root, 'src', 'css', 'demo.css'),
         dest: Path.join(root, 'website', 'demo.min.css')
     }
 ];
@@ -112,25 +111,20 @@ const buildHighlighter = async() => {
     }
 };
 
-const buildScss = () => {
-    for (const item of compileSassOnBuild) {
+/**
+ * Writes native CSS with the project license banner (no preprocessor or minifier).
+ */
+const buildCss = () => {
+    for (const item of copyCssOnBuild) {
         try {
-            // Compile the SCSS file using sass.compile
-            const result = Sass.compile(item.src, {
-                style: 'compressed' // Modern option for compressed output
-            });
-
+            const css = Fs.readFileSync(item.src, { encoding: 'utf8' });
             const dir = Path.dirname(item.dest);
-
-            // Ensure the directory exists, creating it synchronously if necessary
             if (!Fs.existsSync(dir)) {
                 Fs.mkdirSync(dir, { recursive: true });
             }
-
-            // Write the compiled CSS to the destination file synchronously
-            Fs.writeFileSync(item.dest, `${licenseHeader}\n${result.css}`);
+            Fs.writeFileSync(item.dest, `${licenseHeader}\n${css}`);
         } catch (error) {
-            console.error(`Error processing SCSS file ${item.src}:`, error);
+            console.error(`Error processing CSS file ${item.src}:`, error);
         }
     }
 };
@@ -159,5 +153,5 @@ const copyFiles = () => {
 };
 
 await buildHighlighter();
-await buildScss();
+buildCss();
 copyFiles();

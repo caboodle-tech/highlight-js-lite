@@ -1,6 +1,5 @@
 import copyToClipboardMap from './i18n.js';
-import languageDetector from './language-detector.js';
-import { languageCodes, languageDisplayNames } from './languages.js';
+import languageDetector, { languageCodes, languageDisplayNames } from './language-detector.js';
 
 /**
  * @typedef {Object} MessageData
@@ -115,10 +114,13 @@ class Webworker {
     #buildTable(code, pageLang = 'en', editor = false) {
     // In editor mode, preserve whitespace including trailing newlines
         const lines = editor ? code.split('\n') : code.trim().split('\n');
-        const copyButton = this.#buildCopyToClipboardButton(pageLang);
+        const omitClipboard = !editor && lines.length === 1;
+        const copyButton = omitClipboard ? '' : this.#buildCopyToClipboardButton(pageLang);
 
-        // Start building HTML
-        let html = `${copyButton}<table class="hljsl-table"><tbody>`;
+        // Single-line non-editor blocks omit the copy button; editors always keep it
+        let html = omitClipboard ?
+            '<table class="hljsl-table"><tbody>' :
+            `${copyButton}<table class="hljsl-table"><tbody>`;
 
         let openSpan = '';
         const openingPattern = this.#spanPatterns.opening;

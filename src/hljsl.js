@@ -1,6 +1,13 @@
 /**
 * @fileoverview Entry point for HLJSL that handles initialization in different environments
 * and manages singleton instances of the Highlighter and Webworker classes.
+*
+* When this file is served from a known public CDN (jsDelivr, unpkg, cdnjs, Skypack, esm.sh,
+* jspm), the browser build injects `<link rel="stylesheet" href="…/hljsl.min.css">` into
+* `document.head` before the first existing author stylesheet so theme tokens apply predictably.
+* Set `window.hljslConfig = { cdnAutoAssets: false }` before the script to skip, or
+* `cdnAutoAssets: true` to force injection from any host. Highlight.js is not injected on the
+* page; the worker loads `hljs.min.js` from the same directory via `importScripts`.
 */
 
 import Highlighter from './highlighter.js';
@@ -36,6 +43,89 @@ const scriptDirname = (() => {
 
 // Environment detection
 const isWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+/**
+ * @param {string} hostname
+ * @returns {boolean}
+ */
+const isHostLikelyCdn = (hostname) => {
+    if (!hostname) {
+        return false;
+    }
+
+    return (
+        hostname.endsWith('jsdelivr.net') ||
+        hostname === 'unpkg.com' ||
+        hostname.endsWith('.unpkg.com') ||
+        hostname.endsWith('skypack.dev') ||
+        hostname === 'esm.sh' ||
+        hostname.endsWith('.esm.sh') ||
+        hostname.endsWith('cdnjs.cloudflare.com') ||
+        hostname.endsWith('jspm.io')
+    );
+};
+
+/**
+ * @returns {boolean}
+ */
+const shouldInjectHljslStylesheet = () => {
+    if (isWorker) {
+        return false;
+    }
+
+    if (typeof document === 'undefined' || !document.head) {
+        return false;
+    }
+
+    if (typeof window !== 'undefined' && window.hljslConfig?.cdnAutoAssets === false) {
+        return false;
+    }
+
+    if (!scriptDirname) {
+        return false;
+    }
+
+    try {
+        const { hostname } = new URL(scriptDirname);
+
+        if (typeof window !== 'undefined' && window.hljslConfig?.cdnAutoAssets === true) {
+            return true;
+        }
+
+        return isHostLikelyCdn(hostname);
+    } catch {
+        return false;
+    }
+};
+
+/**
+ * Inserts HLJSL stylesheet before the first existing stylesheet so site CSS can override.
+ * @param {string} baseDir Absolute URL base ending with `/`
+ */
+const injectHljslStylesheetEarly = (baseDir) => {
+    if (document.getElementById('hljsl-cdn-stylesheet')) {
+        return;
+    }
+
+    const link = document.createElement('link');
+    link.id = 'hljsl-cdn-stylesheet';
+    link.rel = 'stylesheet';
+    link.href = `${baseDir}hljsl.min.css`;
+    link.setAttribute('data-hljsl-cdn', '');
+
+    const { head } = document;
+    const before = head.querySelector('link[rel="stylesheet"], link[rel="preload"][as="style"], style');
+
+    if (before) {
+        head.insertBefore(link, before);
+    } else {
+        head.insertBefore(link, head.firstChild);
+    }
+};
+
+if (!isWorker && shouldInjectHljslStylesheet()) {
+    injectHljslStylesheetEarly(scriptDirname);
+}
 
 // Singleton instances
 let instance = null;

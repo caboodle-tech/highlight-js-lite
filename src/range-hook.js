@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Manual debugging helper for `Selection` / `Range` usage (e.g. caret bugs in
+ * `editor.js`). This script is not imported by HLJSL, the demo build, or Rollup; it only runs if
+ * you load it yourself, typically with an extra `<script src="range-hook.js">` before HLJSL on a
+ * scratch page. It monkey-patches `addRange`, `setStart`, and `setEnd` and logs stack traces.
+ */
 (function() {
     // Only apply in environments where window + DOM APIs are present
     if (typeof window === 'undefined' ||

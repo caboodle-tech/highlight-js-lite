@@ -2,7 +2,6 @@
 const Version = '???';
 
 import Editor from './editor.js';
-import DOMWatcher from './dom-watcher.js';
 import languageDetector from './language-detector.js';
 
 /**
@@ -37,8 +36,11 @@ class Highlighter {
     #worker = null;
     #version = Version;
 
-    // DOMWatcher instance for efficient DOM observation
-    #domWatcher = null;
+    /** @type {MutationObserver|null} Observes injected `pre code` blocks when auto-load is on */
+    #codeBlockObserver = null;
+
+    /** `pre code` nodes already handed to lazy-load or highlight */
+    #seenCodeBlocks = new WeakSet();
 
     /**
      * @constructor
@@ -56,9 +58,6 @@ class Highlighter {
 
         // Record the script dirname
         this.#root = scriptDirname;
-
-        // Initialize DOMWatcher
-        this.#domWatcher = new DOMWatcher();
 
         // Run basic setup tasks and check GET parameters for config options
         this.#initialize();
@@ -394,9 +393,9 @@ class Highlighter {
         if (!this.#worker) return;
         this.#worker.terminate();
         this.#worker = null;
-        if (this.#domWatcher) {
-            this.#domWatcher.disconnect();
-            this.#domWatcher = null;
+        if (this.#codeBlockObserver) {
+            this.#codeBlockObserver.disconnect();
+            this.#codeBlockObserver = null;
         }
     }
 
@@ -616,27 +615,96 @@ class Highlighter {
     }
 
     /**
-     * Wait for the body to be loaded before processing code blocks
-     * @returns {Promise} Resolves when the body is loaded
+     * Starts lazy or eager highlighting for a `pre code` block (auto-load path).
+     * @param {HTMLElement} block
+     */
+    #wireAutoLoadCodeBlock(block) {
+        if (block.hasAttribute('data-hljsl-id') && !block.hasAttribute('data-unprocessed')) {
+            return;
+        }
+
+        if (this.#lazyLoad) {
+            const observer = new IntersectionObserver(
+                this.#blockInView.bind(this),
+                { root: null, rootMargin: '100%', threshold: 0 }
+            );
+            observer.observe(block);
+        } else {
+            this.highlight(block);
+        }
+    }
+
+    /**
+     * Collects `pre code` elements under a newly inserted subtree root.
+     * @param {Node} root
+     * @returns {HTMLElement[]}
+     */
+    #collectPreCodeBlocksFromSubtree(root) {
+        if (root.nodeType !== Node.ELEMENT_NODE) {
+            return [];
+        }
+
+        const blocks = new Set();
+
+        if (root.matches('pre code')) {
+            blocks.add(root);
+        }
+
+        root.querySelectorAll('pre code').forEach((el) => {
+            blocks.add(el);
+        });
+
+        return [...blocks];
+    }
+
+    /**
+     * @param {MutationRecord[]} mutations
+     */
+    #handleCodeBlockMutations(mutations) {
+        const roots = new Set();
+
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    roots.add(node);
+                }
+            });
+        });
+
+        roots.forEach((root) => {
+            this.#collectPreCodeBlocksFromSubtree(root).forEach((block) => {
+                if (this.#seenCodeBlocks.has(block)) {
+                    return;
+                }
+
+                this.#seenCodeBlocks.add(block);
+                this.#wireAutoLoadCodeBlock(block);
+            });
+        });
+    }
+
+    /**
+     * Watches the document for new `pre code` nodes and wires them for highlighting.
      */
     #initializeCodeProcessing() {
-        if (!this.#autoLoad) return;
+        if (!this.#autoLoad) {
+            return;
+        }
 
-        this.#domWatcher.watch('pre code', (block) => {
-            if (block.hasAttribute('data-hljsl-id') && !block.hasAttribute('data-unprocessed')) {
+        this.#codeBlockObserver = new MutationObserver(this.#handleCodeBlockMutations.bind(this));
+        this.#codeBlockObserver.observe(document.documentElement, {
+            childList: true,
+            subtree: true
+        });
+
+        document.querySelectorAll('pre code').forEach((block) => {
+            if (this.#seenCodeBlocks.has(block)) {
                 return;
             }
 
-            if (this.#lazyLoad) {
-                const observer = new IntersectionObserver(
-                    this.#blockInView.bind(this),
-                    { root: null, rootMargin: '100%', threshold: 0 }
-                );
-                observer.observe(block);
-            } else {
-                this.highlight(block);
-            }
-        }, false);
+            this.#seenCodeBlocks.add(block);
+            this.#wireAutoLoadCodeBlock(block);
+        });
     }
 
     /**
@@ -713,8 +781,10 @@ class Highlighter {
         elem.parentElement.innerHTML = elem.outerHTML.trim();
 
         const button = pre.querySelector('button.hljsl-clipboard');
-        button.addEventListener('click', this.#copyToClipboard);
-        button.addEventListener('keydown', this.#copyToClipboard);
+        if (button) {
+            button.addEventListener('click', this.#copyToClipboard);
+            button.addEventListener('keydown', this.#copyToClipboard);
+        }
 
         if (pre.classList.contains('editor')) {
             this.#editor.activateEditor(pre);
