@@ -1,5 +1,5 @@
 /**
- * Highlight JS Lite v4.1.0 Copyright (c) 2026 Caboodle Tech Inc.
+ * Highlight JS Lite v4.1.1 Copyright (c) 2026 Caboodle Tech Inc.
  * License and source code available at: https://github.com/caboodle-tech/highlight-js-lite
  */
 :root {
@@ -341,6 +341,7 @@ pre.hljsl,
     position: relative;
     border: 1px solid var(--hljsl-r-highlight-border);
     border-radius: 4px;
+    padding: 0;
 
     code {
         margin: 0;
