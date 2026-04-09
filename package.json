@@ -1,13 +1,15 @@
 {
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
+    "cssnano": "^7.1.4",
     "eslint": "^9.39.4",
     "eslint-plugin-html": "^8.1.4",
+    "postcss": "^8.5.9",
     "rollup": "^4.60.1"
   },
   "scripts": {
     "build": "node ./bin/build.js"
   },
   "type": "module",
-  "version": "4.1.1"
+  "version": "4.3.0"
 }

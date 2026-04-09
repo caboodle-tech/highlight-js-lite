@@ -1,6 +1,8 @@
 import Fs from 'fs';
 import Path from 'path';
 import Terser from '@rollup/plugin-terser';
+import cssnano from 'cssnano';
+import postcss from 'postcss';
 import { rollup as Rollup } from 'rollup';
 
 const LicenseHeader = () => ({
@@ -17,8 +19,14 @@ const LicenseHeader = () => ({
 const ReplaceVersion = () => ({
     name: 'replace-version',
     transform(code) {
-        const versionPattern = /const Version = '.*?';/;
-        const newCode = code.replace(versionPattern, `const Version = '${info.version}';`);
+        let newCode = code.replace(
+            /const Version = '.*?';/,
+            `const Version = '${info.version}';`
+        );
+        newCode = newCode.replace(
+            /const HLJSL_RELEASE = '.*?';/,
+            `const HLJSL_RELEASE = '${info.version}';`
+        );
         return {
             code: newCode,
             map: null
@@ -112,17 +120,20 @@ const buildHighlighter = async() => {
 };
 
 /**
- * Writes native CSS with the project license banner (no preprocessor or minifier).
+ * Minifies CSS with PostCSS + cssnano, then prepends the license banner.
+ * Rollup handles JavaScript; CSS uses the usual PostCSS pipeline for correct parsing.
  */
-const buildCss = () => {
+const buildCss = async () => {
+    const processor = postcss([cssnano()]);
     for (const item of copyCssOnBuild) {
         try {
-            const css = Fs.readFileSync(item.src, { encoding: 'utf8' });
+            const raw = Fs.readFileSync(item.src, { encoding: 'utf8' });
             const dir = Path.dirname(item.dest);
             if (!Fs.existsSync(dir)) {
                 Fs.mkdirSync(dir, { recursive: true });
             }
-            Fs.writeFileSync(item.dest, `${licenseHeader}\n${css}`);
+            const result = await processor.process(raw, { from: item.src, to: item.dest });
+            Fs.writeFileSync(item.dest, `${licenseHeader}\n${result.css}`);
         } catch (error) {
             console.error(`Error processing CSS file ${item.src}:`, error);
         }
@@ -153,5 +164,5 @@ const copyFiles = () => {
 };
 
 await buildHighlighter();
-buildCss();
+await buildCss();
 copyFiles();

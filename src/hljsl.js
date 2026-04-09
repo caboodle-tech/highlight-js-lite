@@ -9,6 +9,9 @@
 import Highlighter from './highlighter.js';
 import Webworker from './webworker.js';
 
+/** Baked in at build from package.json; bumps the injected stylesheet URL when you release. */
+const HLJSL_RELEASE = '???';
+
 /**
  * Resolves this script's directory URL in the main thread, worker, or ESM context.
  * @returns {string|undefined} Absolute base URL ending with `/`, or undefined if unknown
@@ -114,7 +117,7 @@ const injectHljslStylesheetEarly = (baseDir) => {
     const link = document.createElement('link');
     link.id = 'hljsl-cdn-stylesheet';
     link.rel = 'stylesheet';
-    link.href = `${baseDir}hljsl.min.css`;
+    link.href = `${baseDir}hljsl.min.css?v=${encodeURIComponent(HLJSL_RELEASE)}`;
     link.setAttribute('data-hljsl-cdn', '');
 
     const { head } = document;
