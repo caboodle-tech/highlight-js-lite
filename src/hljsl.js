@@ -1,22 +1,18 @@
 /**
-* @fileoverview Entry point for HLJSL that handles initialization in different environments
-* and manages singleton instances of the Highlighter and Webworker classes.
-*
-* When this file is served from a known public CDN (jsDelivr, unpkg, cdnjs, Skypack, esm.sh,
-* jspm), the browser build injects `<link rel="stylesheet" href="…/hljsl.min.css">` into
-* `document.head` before the first existing author stylesheet so theme tokens apply predictably.
-* Set `window.hljslConfig = { cdnAutoAssets: false }` before the script to skip, or
-* `cdnAutoAssets: true` to force injection from any host. Highlight.js is not injected on the
-* page; the worker loads `hljs.min.js` from the same directory via `importScripts`.
-*/
+ * @fileoverview HLJSL entry: creates the Highlighter or Webworker singleton and resolves the
+ * script directory for loading assets. On known CDN hosts (jsDelivr, unpkg, cdnjs, Skypack,
+ * esm.sh, jspm) the build may inject `hljsl.min.css` before the first author stylesheet;
+ * `window.hljslConfig.cdnAutoAssets` false skips that, true forces it from any host. Highlight.js
+ * loads inside the worker through `importScripts` from the same directory as hljsl.
+ */
 
 import Highlighter from './highlighter.js';
 import Webworker from './webworker.js';
 
 /**
-* Gets the running script's directory path for all environments
-* @returns {string} Absolute path to the directory containing this script
-*/
+ * Resolves this script's directory URL in the main thread, worker, or ESM context.
+ * @returns {string|undefined} Absolute base URL ending with `/`, or undefined if unknown
+ */
 const scriptDirname = (() => {
     const absolutePath = (scriptUrl) => {
         const path = scriptUrl.pathname.endsWith('/') ?
@@ -25,17 +21,25 @@ const scriptDirname = (() => {
         return scriptUrl.origin + path.replace(/\/{2,}/g, '/');
     };
 
-    // Web Worker environment
     if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
+        /*
+         * Blob bootstrapped workers see `self.location` as a blob URL. Prefer
+         * `self.__hljslScriptBase`, set on the main thread before `importScripts`,
+         * so sibling assets (e.g. hljs.min.js) resolve against the real script directory.
+         */
+        if (typeof self.__hljslScriptBase === 'string' && self.__hljslScriptBase) {
+            return self.__hljslScriptBase;
+        }
         return absolutePath(new URL(self.location.href));
     }
 
-    // Non-module script environment
+    /*
+     * Main thread: classic tag via `document.currentScript`, otherwise ESM via `import.meta.url`.
+     */
     if (typeof document !== 'undefined' && document.currentScript) {
         return absolutePath(new URL(document.currentScript.src));
     }
 
-    // ES module environment
     if (typeof import.meta !== 'undefined' && import.meta.url) {
         return absolutePath(new URL(import.meta.url));
     }
@@ -131,10 +135,10 @@ if (!isWorker && shouldInjectHljslStylesheet()) {
 let instance = null;
 
 /**
-* Initializes HLJSL in the appropriate environment
-* @param {Object} config Configuration options for Highlighter
-* @returns {Highlighter|Webworker} The appropriate singleton instance
-*/
+ * Returns the Highlighter or Webworker singleton for this environment.
+ * @param {Object} config Options passed to Highlighter on the main thread
+ * @returns {Highlighter|Webworker}
+ */
 const InitializeHljsl = (config = {}) => {
     if (instance) return instance;
 

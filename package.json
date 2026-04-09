@@ -9,5 +9,5 @@
     "build": "node ./bin/build.js"
   },
   "type": "module",
-  "version": "4.0.0"
+  "version": "4.1.0"
 }
