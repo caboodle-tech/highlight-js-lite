@@ -1,5 +1,349 @@
 /**
- * Highlight JS Lite v3.4.2 Copyright (c) 2026 Caboodle Tech Inc.
+ * Highlight JS Lite v4.0.0 Copyright (c) 2026 Caboodle Tech Inc.
  * License and source code available at: https://github.com/caboodle-tech/highlight-js-lite
  */
-:root{--primary-bg: #ffffff;--primary-color: #333333;--secondary-bg: #f0f0f0;--secondary-color: #333333;--shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.1);--spacing-lg: 32px;--spacing-med: 16px;--spacing-sm: 8px;--toggle-icon-clr: #666666}html.dark,html.dark-mode{--primary-bg: #1e1e1e;--primary-color: #e0e0e0;--secondary-bg: #2e2e2e;--secondary-color: #e0e0e0;--shadow: 0px 1px 4px 0px rgba(255, 255, 255, 0.1);--toggle-icon-clr: #999999}@font-face{font-family:"Roboto";src:url("./fonts/roboto/roboto-regular.woff2") format("woff2"),url("./fonts/roboto/roboto-regular.woff") format("woff"),url("./fonts/roboto/roboto-regular.ttf") format("truetype")}html,body{margin:0;padding:0;font-family:"Roboto",sans-serif}body{background-color:var(--secondary-bg);font-size:18px;line-height:26px}body a{text-decoration:none;color:#278ee1;font-weight:bold}body :not(pre)>code{background-color:var(--primary-bg);color:var(--primary-color);font-size:1rem;line-height:1.25rem;padding:1px 4px;border:1px solid var(--highlight-border);border-radius:4px;font-family:"Roboto Mono",monospace}body .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border-width:0}body .header{display:block;font-size:2rem;margin:2rem 0 .75rem 0;font-weight:bold}body .lang-title{display:block;font-size:1.35em;margin:2vw 0 .75rem 0;font-weight:bold}body header{display:grid;grid-template-columns:auto;grid-template-rows:auto auto;grid-template-areas:"color-toggle" "github-link";padding:var(--spacing-med);background-color:var(--primary-bg);color:var(--primary-color)}body header #color-mode-toggle{grid-area:color-toggle;box-shadow:var(--shadow);display:flex;align-items:center;justify-items:center;background:var(--secondary-bg);border-radius:20px;height:36px;width:104px;padding:4px;margin:0 var(--spacing-med);position:relative;white-space:nowrap;overflow:hidden}body header #color-mode-toggle input{display:none}body header #color-mode-toggle .slider{background:var(--primary-bg);border-radius:50%;height:28px;width:28px;position:absolute;transition:.2s;box-shadow:var(--shadow)}body header #color-mode-toggle .option{display:flex;align-items:center;justify-content:center;width:32px;height:32px;line-height:32px;text-align:center;cursor:pointer;color:var(--toggle-icon-clr);z-index:1;position:relative}body header #color-mode-toggle .option svg{fill:currentColor;vertical-align:middle}body header #color-mode-toggle .option[for=light-toggle] svg{width:22px;height:22px}body header #color-mode-toggle .option[for=auto-toggle] svg{width:18px;height:18px}body header #color-mode-toggle .option[for=dark-toggle] svg{width:27px;height:27px}body header #color-mode-toggle #light-toggle:not(:checked)~label[for=light-toggle],body header #color-mode-toggle #auto-toggle:not(:checked)~label[for=auto-toggle],body header #color-mode-toggle #dark-toggle:not(:checked)~label[for=dark-toggle]{opacity:.7}body header #color-mode-toggle #light-toggle:not(:checked)~label[for=light-toggle]:hover,body header #color-mode-toggle #auto-toggle:not(:checked)~label[for=auto-toggle]:hover,body header #color-mode-toggle #dark-toggle:not(:checked)~label[for=dark-toggle]:hover{opacity:1}body header #color-mode-toggle #light-toggle:checked~.slider{transform:translateX(2px)}body header #color-mode-toggle #auto-toggle:checked~.slider{transform:translateX(34px)}body header #color-mode-toggle #dark-toggle:checked~.slider{transform:translateX(66px)}body header #color-mode-toggle #light-toggle:checked~label[for=light-toggle],body header #color-mode-toggle #auto-toggle:checked~label[for=auto-toggle],body header #color-mode-toggle #dark-toggle:checked~label[for=dark-toggle]{color:currentColor}body header #github{grid-area:github-link;display:flex;justify-content:right;align-items:center}body header #github>*{display:flex;justify-content:right;align-items:center}body header #github svg{margin-left:var(--spacing-med);width:50px;height:50px;fill:var(--secondary-bg);filter:drop-shadow(0px 0px 1px rgba(0, 0, 0, 0.7))}@media screen and (min-width: 500px){body header{grid-template-columns:1fr auto;grid-template-rows:auto;grid-template-areas:"color-toggle github-link"}}body main{margin:0 auto;padding:var(--spacing-med);max-width:1200px;color:var(--secondary-color)}body footer{padding:calc(var(--spacing-med)*2);text-align:center;background-color:var(--primary-bg);color:var(--primary-color)}body footer svg{fill:#f06464;margin:0 2px -7px 2px}html.dark body header #github svg,html.dark-mode body header #github svg{filter:drop-shadow(0px 0px 1px rgba(255, 255, 255, 0.7))}
+/**
+ * Demo page: light seeds (--primary-*, links, shadow); dark uses fixed near-black surfaces
+ * so the page is true dark mode, not a washed-out grey. Load hljsl.css first.
+ */
+
+:root {
+    /* Light theme seeds (modern neutral, high clarity) */
+    --primary-bg: #ffffff;
+    --primary-color: #18181b;
+    --secondary-bg: #f4f4f5;
+    --secondary-color: #3f3f46;
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+    --spacing-lg: 32px;
+    --spacing-med: 16px;
+    --spacing-sm: 8px;
+    --toggle-icon-clr: #52525b;
+    --demo-link: #2563eb;
+    --demo-link-hover: #1d4ed8;
+    --demo-header-border: color-mix(in srgb, var(--primary-color) 8%, transparent);
+    --demo-github-mark: #24292f;
+    --demo-heart: #f43f5e;
+
+    /* Dark: explicit deep surfaces (not derived from light greys) */
+    --demo-r-primary-bg: light-dark(var(--primary-bg), #0c0e12);
+    --demo-r-primary-color: light-dark(var(--primary-color), #eceef2);
+    --demo-r-secondary-bg: light-dark(var(--secondary-bg), #060708);
+    --demo-r-secondary-color: light-dark(var(--secondary-color), #b4bcc8);
+    --demo-r-shadow: light-dark(
+        var(--shadow),
+        0 2px 10px 0 rgb(0 0 0 / 0.5)
+    );
+    --demo-r-toggle-icon-clr: light-dark(var(--toggle-icon-clr), #a1a1aa);
+    --demo-r-link: light-dark(var(--demo-link), #60a5fa);
+    --demo-r-link-hover: light-dark(var(--demo-link-hover), #93c5fd);
+    --demo-r-header-border: light-dark(var(--demo-header-border), #27272a);
+    --demo-r-github-mark: light-dark(var(--demo-github-mark), #e6edf3);
+
+    /* Theme menu tiles */
+    --demo-theme-radius: 8px;
+    --demo-transition: 0.18s ease;
+    --demo-focus-ring: light-dark(#2563eb, #60a5fa);
+    --demo-theme-toggle-bg: color-mix(
+        in srgb,
+        var(--demo-r-primary-color) 6%,
+        var(--demo-r-secondary-bg)
+    );
+    --demo-theme-toggle-border: var(--hljsl-r-highlight-border);
+    --demo-theme-toggle-bg-hover: color-mix(
+        in srgb,
+        var(--demo-r-primary-color) 10%,
+        var(--demo-r-secondary-bg)
+    );
+    --demo-theme-toggle-border-hover: color-mix(
+        in srgb,
+        var(--demo-r-primary-color) 22%,
+        var(--hljsl-r-highlight-border)
+    );
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src:
+        url('./fonts/roboto/roboto-regular.woff2') format('woff2'),
+        url('./fonts/roboto/roboto-regular.woff') format('woff'),
+        url('./fonts/roboto/roboto-regular.ttf') format('truetype');
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    background-color: var(--demo-r-secondary-bg);
+    font-size: 18px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+
+    a {
+        text-decoration: none;
+        color: var(--demo-r-link);
+        font-weight: 600;
+        transition: color var(--demo-transition);
+
+        &:hover {
+            color: var(--demo-r-link-hover);
+        }
+    }
+
+    :not(pre) > code {
+        background-color: var(--demo-r-primary-bg);
+        color: var(--demo-r-primary-color);
+        font-size: 1rem;
+        line-height: 1.25rem;
+        padding: 1px 4px;
+        border: 1px solid var(--hljsl-r-highlight-border);
+        border-radius: 4px;
+        font-family: 'Roboto Mono', monospace;
+    }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+    }
+
+    .header {
+        display: block;
+        font-size: 2rem;
+        margin: 2rem 0 0.75rem 0;
+        font-weight: bold;
+    }
+
+    .lang-title {
+        display: block;
+        font-size: 1.35em;
+        margin: 2vw 0 0.75rem 0;
+        font-weight: bold;
+    }
+
+    header {
+        display: grid;
+        grid-template-columns: auto;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            'color-toggle'
+            'github-link';
+        padding: var(--spacing-med) var(--spacing-lg);
+        background-color: var(--demo-r-primary-bg);
+        color: var(--demo-r-primary-color);
+        border-bottom: 1px solid var(--demo-r-header-border);
+        box-shadow: var(--demo-r-shadow);
+
+        details.theme-menu {
+            grid-area: color-toggle;
+            position: relative;
+            display: inline-block;
+            width: max-content;
+            max-width: 100%;
+            margin: 0 var(--spacing-med);
+            padding: 0;
+            border: none;
+            background: transparent;
+            flex-shrink: 0;
+            box-shadow: none;
+            overflow: visible;
+            color: inherit;
+            align-self: center;
+
+            &:focus,
+            &:focus-visible {
+                outline: none;
+            }
+
+            > summary.theme-control {
+                text-transform: none;
+                font-weight: normal;
+                list-style: none;
+                width: max-content;
+
+                &::-webkit-details-marker {
+                    display: none;
+                }
+
+                &::marker {
+                    content: '';
+                }
+
+                &::after {
+                    content: none;
+                    display: none;
+                }
+
+                &:focus {
+                    outline: none;
+                }
+
+                &:focus-visible {
+                    outline: 2px solid var(--demo-focus-ring);
+                    outline-offset: 2px;
+                }
+
+                &::before {
+                    content: '⚙️';
+                }
+            }
+
+            .theme-control {
+                box-sizing: border-box;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: calc(1.5rem + var(--spacing-sm));
+                min-height: calc(1.5rem + var(--spacing-sm));
+                margin: 0;
+                padding: 0.25rem;
+                font-size: 1.125rem;
+                line-height: 1;
+                color: var(--demo-r-toggle-icon-clr);
+                background-color: var(--demo-theme-toggle-bg);
+                border: 1px solid var(--demo-theme-toggle-border);
+                border-radius: var(--demo-theme-radius);
+                cursor: pointer;
+                transition:
+                    background-color var(--demo-transition),
+                    border-color var(--demo-transition);
+            }
+
+            .theme-control:hover {
+                background-color: var(--demo-theme-toggle-bg-hover);
+                border-color: var(--demo-theme-toggle-border-hover);
+            }
+
+            > .theme-extra {
+                position: absolute;
+                z-index: 50;
+                top: 100%;
+                margin-top: 0.35rem;
+                right: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.35rem;
+                padding: 0;
+                background: none;
+                border: none;
+                box-shadow: none;
+            }
+
+            &:not([open]) > .theme-extra {
+                display: none;
+            }
+
+            &[open] > .theme-extra {
+                animation: theme-extra-reveal 0.2s ease-out;
+            }
+
+            .theme-pick {
+                position: relative;
+            }
+        }
+
+        #github {
+            grid-area: github-link;
+            display: flex;
+            justify-content: right;
+            align-items: center;
+
+            > * {
+                display: flex;
+                justify-content: right;
+                align-items: center;
+            }
+
+            svg {
+                margin-left: var(--spacing-med);
+                width: 50px;
+                height: 50px;
+                fill: var(--demo-r-github-mark);
+            }
+        }
+
+        @media screen and (min-width: 500px) {
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto;
+            grid-template-areas: 'color-toggle github-link';
+        }
+    }
+
+    main {
+        margin: 0 auto;
+        padding: var(--spacing-lg) var(--spacing-med);
+        max-width: 1200px;
+        color: var(--demo-r-secondary-color);
+
+        h1 {
+            color: var(--demo-r-primary-color);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            margin-top: 0;
+        }
+    }
+
+    footer {
+        padding: calc(var(--spacing-lg) * 1.25) var(--spacing-med);
+        text-align: center;
+        background-color: var(--demo-r-primary-bg);
+        color: var(--demo-r-primary-color);
+        border-top: 1px solid var(--demo-r-header-border);
+
+        svg {
+            fill: var(--demo-heart);
+            margin: 0 2px -7px 2px;
+        }
+    }
+}
+
+@keyframes theme-extra-reveal {
+    from {
+        transform: translateY(-0.4rem);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+html:has(input[name='theme-preference'][value='light']:checked)
+    details.theme-menu
+    > summary.theme-control::before {
+    content: '☀️';
+}
+
+html:has(input[name='theme-preference'][value='light']:checked)
+    details.theme-menu
+    .theme-pick[data-theme-pick='light'] {
+    display: none;
+}
+
+html:has(input[name='theme-preference'][value='dark']:checked)
+    details.theme-menu
+    > summary.theme-control::before {
+    content: '🌖';
+}
+
+html:has(input[name='theme-preference'][value='dark']:checked)
+    details.theme-menu
+    .theme-pick[data-theme-pick='dark'] {
+    display: none;
+}
+
+html:has(input[name='theme-preference'][value='system']:checked)
+    details.theme-menu
+    .theme-pick[data-theme-pick='system'] {
+    display: none;
+}

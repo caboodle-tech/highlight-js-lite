@@ -1,5 +1,512 @@
 /**
- * Highlight JS Lite v3.4.2 Copyright (c) 2026 Caboodle Tech Inc.
+ * Highlight JS Lite v4.0.0 Copyright (c) 2026 Caboodle Tech Inc.
  * License and source code available at: https://github.com/caboodle-tech/highlight-js-lite
  */
-﻿html.light,html.light-mode,html.lite,html.lite-mode,:root{--editor-control-bar: #2e2e2e;--editor-control-svg: #e0e0e0;--editor-control-color: #e0e0e0;--highlight-addition: #8dad98;--highlight-alt-bg: #e5e5e5;--highlight-attribute: #0177b3;--highlight-bg: #f6f6f6;--highlight-border: #c1c1c1;--highlight-btn-border: #3c3c3c;--highlight-btn-fill: #3c3c3c;--highlight-color: #2f3337;--highlight-comment: #656e77;--highlight-copy-bg: #fffbcd;--highlight-deletion: #c02d2e;--highlight-doctag: #d08818;--highlight-keyword: #015692;--highlight-literal: #b75501;--highlight-meta: #949494;--highlight-namespace: #b75501;--highlight-number: #0a58b2;--highlight-operator: #3a697d;--highlight-punctuation: #686d75;--highlight-section: #a626a4;--highlight-symbol: #803378;--highlight-tag: #437C17;--highlight-variable: #54790d}html.dark,html.dark-mode{--editor-control-bar: #000000;--editor-control-svg: #ffffff;--editor-control-color: #ffffff;--highlight-addition: #76c490;--highlight-alt-bg: #292929;--highlight-attribute: #68a8e4;--highlight-bg: #1c1b1b;--highlight-border: #999999;--highlight-btn-border: #4d4d4d;--highlight-btn-fill: #777777;--highlight-color: #ffffff;--highlight-comment: #999999;--highlight-copy-bg: #4a4040;--highlight-deletion: #de7176;--highlight-doctag: #d88816;--highlight-keyword: #88aece;--highlight-literal: #f08d49;--highlight-meta: #7a7a7a;--highlight-namespace: #f08d49;--highlight-number: #5296d1;--highlight-operator: #58a2c3;--highlight-punctuation: #bbbbbb;--highlight-section: #d78dea;--highlight-symbol: #c59bc1;--highlight-tag: #76c7b7;--highlight-variable: #b5bd68}@keyframes loading-wave{0%{background-position:-200% 0}100%{background-position:200% 0}}:not(.hljs):not(.hljsl)>pre:has(>code):not(.hljs):not(.hljsl){background-color:var(--highlight-bg);border:1px solid var(--highlight-border);white-space:normal;word-wrap:break-word;padding:5px 5px 5px calc(2.25rem + 5px);position:relative}:not(.hljs):not(.hljsl)>pre:has(>code):not(.hljs):not(.hljsl)::before{content:"";width:2.25rem;background-color:var(--highlight-alt-bg);position:absolute;top:0;left:0;bottom:0;border-right:1px solid var(--highlight-border)}:not(.hljs):not(.hljsl)>pre:has(>code):not(.hljs):not(.hljsl)::after{content:"";background:linear-gradient(90deg, var(--highlight-bg) 0%, color-mix(in srgb, var(--highlight-bg) 85%, transparent) 25%, color-mix(in srgb, var(--highlight-bg) 90%, transparent) 35%, color-mix(in srgb, var(--highlight-bg) 85%, transparent) 45%, var(--highlight-bg) 70%);background-size:200% 100%;position:absolute;top:0;right:0;bottom:0;left:2.25rem;border-right:1px solid var(--highlight-border);animation:loading-wave 2s ease-in-out infinite}.hljs{color:var(--highlight-color);background:var(--highlight-bg)}.hljs-comment{color:var(--highlight-comment)}.hljs-text{color:var(--highlight-color)}.hljs-subst{color:var(--highlight-color)}.hljs-keyword,.hljs-meta .hljs-keyword{color:var(--highlight-keyword)}.hljs-selector-tag{color:var(--highlight-tag)}.hljs-operator{color:var(--highlight-operator)}.hljs-variable.constant_,.hljs-attr{color:var(--highlight-attribute)}.hljs-meta,.diff .hljs-meta{color:var(--highlight-meta)}.hljs-section{color:var(--highlight-section)}.hljs-doctag{color:var(--highlight-doctag)}.hljs-number{color:var(--highlight-number)}.hljs-attribute,.hljs-symbol{color:var(--highlight-symbol)}.hljs-name,.hljs-type,.hljs-selector-id,.hljs-quote,.hljs-tag,.hljs-template-tag{color:var(--highlight-namespace)}.hljs-selector-class{color:var(--highlight-symbol)}.hljs-string,.hljs-regexp,.hljs-variable,.hljs-template-variable,.hljs-link,.hljs-selector-attr{color:var(--highlight-variable)}.hljs-built_in,.hljs-title_class,.hljs-title.class_,.hljs-title.class_.inherited__,.hljs-title,.hljs-literal{color:var(--highlight-literal)}.hljs-bullet,.hljs-code{color:var(--highlight-punctuation)}.hljs-meta .hljs-string{color:var(--highlight-variable)}.hljs-deletion{color:var(--highlight-deletion)}.hljs-addition{color:var(--highlight-addition)}.hljs-emphasis{font-style:italic}.hljs-strong{font-weight:bold}pre:has(>code){overflow:hidden}pre.hljsl,.hljsl pre,.hljs pre{white-space:pre-wrap;white-space:-moz-pre-wrap;white-space:-pre-wrap;white-space:-o-pre-wrap;word-wrap:break-word;position:relative;border:1px solid var(--highlight-border)}pre.hljsl code,.hljsl pre code,.hljs pre code{margin:0;padding:0}pre.hljsl .hljsl-clipboard,.hljsl pre .hljsl-clipboard,.hljs pre .hljsl-clipboard{display:flex;align-items:center;justify-content:center;background:var(--highlight-alt-bg);border:1px solid var(--highlight-btn-border);cursor:pointer;opacity:0;padding:3px;position:absolute;right:10px;top:10px;transition:opacity .35s linear;z-index:9999}pre.hljsl .hljsl-clipboard svg,.hljsl pre .hljsl-clipboard svg,.hljs pre .hljsl-clipboard svg{margin:5px;fill:var(--highlight-btn-fill)}pre.hljsl:hover .hljsl-clipboard,.hljsl pre:hover .hljsl-clipboard,.hljs pre:hover .hljsl-clipboard{opacity:1}.hljsl-table{display:flex;border-collapse:collapse;width:100%;overflow-x:auto;max-width:100%;font-size:1em;line-height:1.2em}.hljsl-table tbody{display:inline-table;width:100%}.hljsl-table tr{width:100%}.hljsl-table tr td:empty::before{content:" "}.hljsl-table tr td span:empty::before{content:" "}.hljsl-table tr td:nth-child(1){text-align:right;border-right:1px solid var(--highlight-border);vertical-align:top;padding:0 5px;-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;background:var(--highlight-alt-bg);white-space:nowrap}.hljsl-table tr td:nth-child(2){width:100%;background:var(--highlight-bg);white-space:pre;padding-left:10px;padding-right:10px}.hljsl-table tr,.hljsl-table th{border:none}.hljsl-table tr td,.hljsl-table th td{white-space:pre;min-width:initial}.hljsl-table tr:first-of-type td,.hljsl-table th:first-of-type td{padding-top:5px}.hljsl-table tr:last-of-type td,.hljsl-table th:last-of-type td{padding-bottom:5px}.hljsl-table.copy-to-clipboard tr td:nth-child(2){background-color:var(--highlight-copy-bg)}pre.hljsl.editor .hljsl-clipboard,.hljsl pre.editor .hljsl-clipboard,.hljs pre.editor .hljsl-clipboard{display:none}pre.hljsl.editor [contenteditable],.hljsl pre.editor [contenteditable],.hljs pre.editor [contenteditable]{outline:none}pre.hljsl.editor [contenteditable]:focus,.hljsl pre.editor [contenteditable]:focus,.hljs pre.editor [contenteditable]:focus{background:var(--highlight-copy-bg);outline:none}.editor-controls{display:flex;align-items:center;flex-direction:row;background:var(--editor-control-bar);border:1px solid var(--highlight-border);color:var(--editor-control-color);font-weight:bold;letter-spacing:1px;margin-top:1em;padding:10px}.editor-controls .icon{fill:var(--editor-control-svg);margin-right:7px}.editor-controls .lang{flex:1}.editor-controls button.hljsl-clipboard{cursor:pointer;background-color:var(--highlight-bg);border:1px solid var(--highlight-btn-border);padding:7px 7px 3px 7px;margin:0}.editor-controls button.hljsl-clipboard svg{fill:var(--highlight-btn-fill)}.editor-controls+pre{margin-top:0;border-top:0}.hide-numbers .hljsl-table tr td:nth-child(1){display:none}.show-numbers .hljsl-table tr td:nth-child(1),.hide-numbers.show-numbers .hljsl-table tr td:nth-child(1),.hide-numbers .show-numbers .hljsl-table tr td:nth-child(1){display:table-cell}
+:root {
+    color-scheme: light;
+
+    --editor-control-bar: #2e2e2e;
+    --editor-control-svg: #e0e0e0;
+    --editor-control-color: #e0e0e0;
+    --highlight-addition: #8dad98;
+    --highlight-alt-bg: #e5e5e5;
+    --highlight-attribute: #0177b3;
+    --highlight-bg: #f6f6f6;
+    --highlight-border: #c1c1c1;
+    --highlight-btn-fill: #3c3c3c;
+    --highlight-color: #2f3337;
+    --highlight-comment: #656e77;
+    --highlight-copy-bg: #fffbcd;
+    --highlight-deletion: #c02d2e;
+    --highlight-doctag: #d08818;
+    --highlight-keyword: #015692;
+    --highlight-literal: #b75501;
+    --highlight-meta: #949494;
+    --highlight-namespace: #b75501;
+    --highlight-number: #0a58b2;
+    --highlight-operator: #3a697d;
+    --highlight-punctuation: #686d75;
+    --highlight-section: #a626a4;
+    --highlight-symbol: #803378;
+    --highlight-tag: #437c17;
+    --highlight-variable: #54790d;
+
+    --hljsl-r-editor-control-bar: light-dark(
+        color-mix(in oklch, var(--highlight-bg) 82%, var(--editor-control-bar) 18%),
+        color-mix(in oklch, var(--hljsl-r-highlight-bg) 32%, oklch(0.27 0.024 264))
+    );
+    --hljsl-r-editor-control-svg: light-dark(
+        var(--highlight-btn-fill),
+        color-mix(in srgb, var(--editor-control-svg) 88%, white)
+    );
+    --hljsl-r-editor-control-color: light-dark(
+        var(--highlight-color),
+        color-mix(in srgb, var(--editor-control-color) 92%, white)
+    );
+    --hljsl-r-highlight-addition: light-dark(
+        var(--highlight-addition),
+        color-mix(in srgb, var(--highlight-addition) 45%, white)
+    );
+    --hljsl-r-highlight-alt-bg: light-dark(
+        var(--highlight-alt-bg),
+        color-mix(in srgb, var(--highlight-alt-bg) 6%, black)
+    );
+    --hljsl-r-line-number-fg: light-dark(var(--highlight-meta), oklch(0.72 0.02 264));
+    --hljsl-r-highlight-attribute: light-dark(
+        var(--highlight-attribute),
+        color-mix(in srgb, var(--highlight-attribute) 58%, white)
+    );
+    --hljsl-r-highlight-bg: light-dark(
+        var(--highlight-bg),
+        color-mix(in srgb, var(--highlight-bg) 4%, black)
+    );
+    --hljsl-r-highlight-border: light-dark(
+        var(--highlight-border),
+        color-mix(in oklch, var(--hljsl-r-highlight-bg) 42%, oklch(0.518 0.03 264))
+    );
+    --hljsl-r-highlight-btn-fill: light-dark(
+        var(--highlight-btn-fill),
+        color-mix(in srgb, var(--highlight-btn-fill) 62%, white)
+    );
+    --hljsl-r-highlight-color: light-dark(
+        var(--highlight-color),
+        color-mix(in srgb, var(--highlight-color) 81%, white)
+    );
+    --hljsl-r-highlight-comment: light-dark(
+        var(--highlight-comment),
+        color-mix(in srgb, var(--highlight-comment) 62%, white)
+    );
+    --hljsl-r-highlight-copy-bg: light-dark(
+        var(--highlight-copy-bg),
+        color-mix(in srgb, var(--highlight-copy-bg) 12%, black)
+    );
+    --hljsl-r-highlight-deletion: light-dark(
+        var(--highlight-deletion),
+        color-mix(in srgb, var(--highlight-deletion) 52%, white)
+    );
+    --hljsl-r-highlight-doctag: light-dark(
+        var(--highlight-doctag),
+        color-mix(in srgb, var(--highlight-doctag) 55%, white)
+    );
+    --hljsl-r-highlight-keyword: light-dark(
+        var(--highlight-keyword),
+        color-mix(in srgb, var(--highlight-keyword) 58%, white)
+    );
+    --hljsl-r-highlight-literal: light-dark(
+        var(--highlight-literal),
+        color-mix(in srgb, var(--highlight-literal) 56%, white)
+    );
+    --hljsl-r-highlight-meta: light-dark(
+        var(--highlight-meta),
+        color-mix(in srgb, var(--highlight-meta) 58%, white)
+    );
+    --hljsl-r-highlight-namespace: light-dark(
+        var(--highlight-namespace),
+        color-mix(in srgb, var(--highlight-namespace) 56%, white)
+    );
+    --hljsl-r-highlight-number: light-dark(
+        var(--highlight-number),
+        color-mix(in srgb, var(--highlight-number) 58%, white)
+    );
+    --hljsl-r-highlight-operator: light-dark(
+        var(--highlight-operator),
+        color-mix(in srgb, var(--highlight-operator) 60%, white)
+    );
+    --hljsl-r-highlight-punctuation: light-dark(
+        var(--highlight-punctuation),
+        color-mix(in srgb, var(--highlight-punctuation) 62%, white)
+    );
+    --hljsl-r-highlight-section: light-dark(
+        var(--highlight-section),
+        color-mix(in srgb, var(--highlight-section) 52%, white)
+    );
+    --hljsl-r-highlight-symbol: light-dark(
+        var(--highlight-symbol),
+        color-mix(in srgb, var(--highlight-symbol) 54%, white)
+    );
+    --hljsl-r-highlight-tag: light-dark(
+        var(--highlight-tag),
+        color-mix(in srgb, var(--highlight-tag) 54%, white)
+    );
+    --hljsl-r-highlight-variable: light-dark(
+        var(--highlight-variable),
+        color-mix(in srgb, var(--highlight-variable) 54%, white)
+    );
+}
+
+@media (prefers-color-scheme: dark) {
+    html:has(input[name='theme-preference'][value='system']:checked) {
+        color-scheme: dark;
+    }
+
+    html:not(:has(input[name='theme-preference'])) {
+        color-scheme: dark;
+    }
+}
+
+html.dark,
+html.dark-mode {
+    color-scheme: dark;
+}
+
+html.light,
+html.light-mode,
+html.lite,
+html.lite-mode {
+    color-scheme: light;
+}
+
+html:has(input[name='theme-preference'][value='dark']:checked) {
+    color-scheme: dark;
+}
+
+html:has(input[name='theme-preference'][value='light']:checked) {
+    color-scheme: light;
+}
+
+@keyframes loading-wave {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+:not(.hljs):not(.hljsl) > pre:has(> code):not(.hljs):not(.hljsl) {
+    background-color: var(--hljsl-r-highlight-bg);
+    border: 1px solid var(--hljsl-r-highlight-border);
+    border-radius: 4px;
+    overflow: hidden;
+    white-space: normal;
+    word-wrap: break-word;
+    padding: 5px 5px 5px calc(2.25rem + 5px);
+    position: relative;
+}
+
+:not(.hljs):not(.hljsl) > pre:has(> code):not(.hljs):not(.hljsl)::before {
+    content: '';
+    width: 2.25rem;
+    background-color: var(--hljsl-r-highlight-alt-bg);
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    border-right: 1px solid var(--hljsl-r-highlight-border);
+}
+
+:not(.hljs):not(.hljsl) > pre:has(> code):not(.hljs):not(.hljsl)::after {
+    content: '';
+    background: linear-gradient(
+        90deg,
+        var(--hljsl-r-highlight-bg) 0%,
+        color-mix(in srgb, var(--hljsl-r-highlight-bg) 85%, transparent) 25%,
+        color-mix(in srgb, var(--hljsl-r-highlight-bg) 90%, transparent) 35%,
+        color-mix(in srgb, var(--hljsl-r-highlight-bg) 85%, transparent) 45%,
+        var(--hljsl-r-highlight-bg) 70%
+    );
+    background-size: 200% 100%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 2.25rem;
+    border-right: 1px solid var(--hljsl-r-highlight-border);
+    animation: loading-wave 2s ease-in-out infinite;
+}
+
+.hljs {
+    color: var(--hljsl-r-highlight-color);
+    background: var(--hljsl-r-highlight-bg);
+}
+
+.hljs-comment {
+    color: var(--hljsl-r-highlight-comment);
+}
+
+.hljs-text {
+    color: var(--hljsl-r-highlight-color);
+}
+
+.hljs-subst {
+    color: var(--hljsl-r-highlight-color);
+}
+
+.hljs-keyword,
+.hljs-meta .hljs-keyword {
+    color: var(--hljsl-r-highlight-keyword);
+}
+
+.hljs-selector-tag {
+    color: var(--hljsl-r-highlight-tag);
+}
+
+.hljs-operator {
+    color: var(--hljsl-r-highlight-operator);
+}
+
+.hljs-variable.constant_,
+.hljs-attr {
+    color: var(--hljsl-r-highlight-attribute);
+}
+
+.hljs-meta,
+.diff .hljs-meta {
+    color: var(--hljsl-r-highlight-meta);
+}
+
+.hljs-section {
+    color: var(--hljsl-r-highlight-section);
+}
+
+.hljs-doctag {
+    color: var(--hljsl-r-highlight-doctag);
+}
+
+.hljs-number {
+    color: var(--hljsl-r-highlight-number);
+}
+
+.hljs-attribute,
+.hljs-symbol {
+    color: var(--hljsl-r-highlight-symbol);
+}
+
+.hljs-name,
+.hljs-type,
+.hljs-selector-id,
+.hljs-quote,
+.hljs-tag,
+.hljs-template-tag {
+    color: var(--hljsl-r-highlight-namespace);
+}
+
+.hljs-selector-class {
+    color: var(--hljsl-r-highlight-symbol);
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-link,
+.hljs-selector-attr {
+    color: var(--hljsl-r-highlight-variable);
+}
+
+.hljs-built_in,
+.hljs-title_class,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title,
+.hljs-literal {
+    color: var(--hljsl-r-highlight-literal);
+}
+
+.hljs-bullet,
+.hljs-code {
+    color: var(--hljsl-r-highlight-punctuation);
+}
+
+.hljs-meta .hljs-string {
+    color: var(--hljsl-r-highlight-variable);
+}
+
+.hljs-deletion {
+    color: var(--hljsl-r-highlight-deletion);
+}
+
+.hljs-addition {
+    color: var(--hljsl-r-highlight-addition);
+}
+
+.hljs-emphasis {
+    font-style: italic;
+}
+
+.hljs-strong {
+    font-weight: bold;
+}
+
+pre:has(> code) {
+    overflow: hidden;
+}
+
+pre.hljsl,
+.hljsl pre,
+.hljs pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    position: relative;
+    border: 1px solid var(--hljsl-r-highlight-border);
+    border-radius: 4px;
+
+    code {
+        margin: 0;
+        padding: 0;
+    }
+
+    .hljsl-clipboard {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--hljsl-r-highlight-alt-bg);
+        border: 1px solid var(--hljsl-r-highlight-border);
+        border-radius: 4px;
+        cursor: pointer;
+        opacity: 0;
+        padding: 3px;
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        transition: opacity 0.35s linear;
+        z-index: 9999;
+
+        svg {
+            margin: 5px;
+            fill: var(--hljsl-r-highlight-btn-fill);
+        }
+    }
+
+    &:hover .hljsl-clipboard {
+        opacity: 1;
+    }
+}
+
+.hljsl-table {
+    display: flex;
+    border-collapse: collapse;
+    width: 100%;
+    overflow-x: auto;
+    max-width: 100%;
+    font-size: 1em;
+    line-height: 1.2em;
+
+    tbody {
+        display: inline-table;
+        width: 100%;
+    }
+
+    tr {
+        width: 100%;
+
+        td:empty::before {
+            content: '\00A0';
+        }
+
+        td span:empty::before {
+            content: '\00A0';
+        }
+
+        td:nth-child(1) {
+            text-align: right;
+            border-right: 1px solid var(--hljsl-r-highlight-border);
+            vertical-align: top;
+            padding: 0 5px;
+            user-select: none;
+            background: var(--hljsl-r-highlight-alt-bg);
+            color: var(--hljsl-r-line-number-fg);
+            white-space: nowrap;
+        }
+
+        td:nth-child(2) {
+            width: 100%;
+            background: var(--hljsl-r-highlight-bg);
+            white-space: pre;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+    }
+
+    tr,
+    th {
+        border: none;
+
+        td {
+            white-space: pre;
+            min-width: initial;
+        }
+
+        &:first-of-type td {
+            padding-top: 5px;
+        }
+
+        &:last-of-type td {
+            padding-bottom: 5px;
+        }
+    }
+
+    &.copy-to-clipboard tr td:nth-child(2) {
+        background-color: var(--hljsl-r-highlight-copy-bg);
+    }
+}
+
+pre.hljsl.editor,
+.hljsl pre.editor,
+.hljs pre.editor {
+    .hljsl-clipboard {
+        display: none;
+    }
+
+    [contenteditable] {
+        outline: none;
+
+        &:focus {
+            background: var(--hljsl-r-highlight-copy-bg);
+            outline: none;
+        }
+    }
+}
+
+.editor-controls {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    background: var(--hljsl-r-editor-control-bar);
+    border: 1px solid var(--hljsl-r-highlight-border);
+    border-radius: 4px 4px 0 0;
+    color: var(--hljsl-r-editor-control-color);
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 1em;
+    padding: 10px;
+
+    .icon {
+        fill: var(--hljsl-r-editor-control-svg);
+        margin-right: 7px;
+    }
+
+    .lang {
+        flex: 1;
+    }
+
+    button.hljsl-clipboard {
+        cursor: pointer;
+        background-color: var(--hljsl-r-highlight-bg);
+        border: 1px solid var(--hljsl-r-highlight-border);
+        border-radius: 4px;
+        padding: 7px 7px 3px 7px;
+        margin: 0;
+
+        svg {
+            fill: var(--hljsl-r-highlight-btn-fill);
+        }
+    }
+
+    + pre {
+        margin-top: 0;
+        border-top: 0;
+        border-radius: 0 0 4px 4px;
+    }
+}
+
+.hide-numbers .hljsl-table tr td:nth-child(1) {
+    display: none;
+}
+
+.show-numbers .hljsl-table tr td:nth-child(1),
+.hide-numbers.show-numbers .hljsl-table tr td:nth-child(1),
+.hide-numbers .show-numbers .hljsl-table tr td:nth-child(1) {
+    display: table-cell;
+}
